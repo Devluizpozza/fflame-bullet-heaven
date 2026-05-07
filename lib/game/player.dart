@@ -1,5 +1,6 @@
+import 'dart:ui';
+
 import 'package:flame/components.dart';
-import 'package:flame/input.dart';
 import 'package:flutter/services.dart';
 
 class Player extends RectangleComponent with KeyboardHandler {
@@ -7,10 +8,10 @@ class Player extends RectangleComponent with KeyboardHandler {
   Vector2 velocity = Vector2.zero();
 
   Player()
-      : super(
-          size: Vector2(32, 32),
-          paint: Paint()..color = const Color(0xFF0000FF),
-        );
+    : super(
+        size: Vector2(32, 32),
+        paint: Paint()..color = const Color(0xFF0000FF),
+      );
 
   @override
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {

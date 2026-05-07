@@ -1,10 +1,13 @@
 import 'dart:math';
+import 'dart:ui';
+
+import 'package:flame/camera.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 
-import 'player.dart';
 import 'enemy.dart';
+import 'player.dart';
 
 class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   late Player player;
@@ -12,11 +15,10 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
 
   @override
   Future<void> onLoad() async {
-    camera.viewport = FixedResolutionViewport(Vector2(800, 600));
+    camera.viewport = FixedResolutionViewport(resolution: Vector2(800, 600));
 
     // Player
-    player = Player()
-      ..position = Vector2(400, 300);
+    player = Player()..position = Vector2(400, 300);
     add(player);
 
     // Enemies
@@ -32,18 +34,18 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
     }
 
     for (int x = 0; x < 25; x++) {
-  for (int y = 0; y < 19; y++) {
-    add(
-      RectangleComponent(
-        position: Vector2(x * 32, y * 32),
-        size: Vector2(32, 32),
-        paint: Paint()
-          ..color = (x + y) % 2 == 0
-              ? const Color(0xFFEEEEEE)
-              : const Color(0xFFCCCCCC),
-      ),
-    );
-  }
-}
+      for (int y = 0; y < 19; y++) {
+        add(
+          RectangleComponent(
+            position: Vector2(x * 32, y * 32),
+            size: Vector2(32, 32),
+            paint: Paint()
+              ..color = (x + y) % 2 == 0
+                  ? const Color(0xFFEEEEEE)
+                  : const Color(0xFFCCCCCC),
+          ),
+        );
+      }
+    }
   }
 }
