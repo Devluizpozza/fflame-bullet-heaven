@@ -9,12 +9,15 @@ import 'package:flutter/material.dart' show Colors, EdgeInsets, VoidCallback;
 import 'enemy.dart';
 import 'game_constants.dart';
 import 'player.dart';
+import 'projectile.dart';
 
-class MyGame extends FlameGame with HasKeyboardHandlerComponents {
+class MyGame extends FlameGame
+    with HasKeyboardHandlerComponents, HasCollisionDetection {
   final VoidCallback onQuit;
   late Player player;
   late final World _world;
   late final CameraComponent _cam;
+  final List<Enemy> _enemies = [];
 
   MyGame({required this.onQuit});
 
@@ -42,8 +45,15 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
     _world.add(_CheckerboardBackground());
 
     // Player no centro do mapa
-    player = Player(joystick)
-      ..position = Vector2(
+    // _enemies é passado por referência — estará populado quando o player
+    // começar a chamar update(), mesmo sendo criado antes dos inimigos.
+    player = Player(
+      joystick,
+      enemies: _enemies,
+      onFire: (pos, dir) => _world.add(
+        Projectile(position: pos, direction: dir),
+      ),
+    )..position = Vector2(
         GameConstants.mapWidth / 2,
         GameConstants.mapHeight / 2,
       );
@@ -52,32 +62,26 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
     // Câmera segue o player
     _cam.follow(player);
 
-    // Vermelho — acima e à esquerda do player, velocidade média
-    _world.add(
-      Enemy(player, speed: 70, color: Colors.red)
-        ..position = Vector2(
-          GameConstants.mapWidth / 2 - 400,
-          GameConstants.mapHeight / 2 - 350,
-        ),
-    );
+    _spawnEnemy(speed: 70, color: Colors.red,
+        offset: Vector2(-400, -350)); // acima-esquerda
+    _spawnEnemy(speed: 85, color: Colors.green,
+        offset: Vector2(350, -300));  // acima-direita
+    _spawnEnemy(speed: 55, color: Colors.yellow,
+        offset: Vector2(0, 400));     // abaixo
+  }
 
-    // Verde — acima e à direita do player, mais rápido
-    _world.add(
-      Enemy(player, speed: 85, color: Colors.green)
-        ..position = Vector2(
-          GameConstants.mapWidth / 2 + 350,
-          GameConstants.mapHeight / 2 - 300,
-        ),
-    );
-
-    // Amarelo — abaixo do player, mais lento
-    _world.add(
-      Enemy(player, speed: 55, color: Colors.yellow)
-        ..position = Vector2(
-          GameConstants.mapWidth / 2,
-          GameConstants.mapHeight / 2 + 400,
-        ),
-    );
+  void _spawnEnemy({
+    required double speed,
+    required Color color,
+    required Vector2 offset,
+  }) {
+    final e = Enemy(player, speed: speed, color: color)
+      ..position = Vector2(
+        GameConstants.mapWidth / 2 + offset.x,
+        GameConstants.mapHeight / 2 + offset.y,
+      );
+    _enemies.add(e);
+    _world.add(e);
   }
 
   @override

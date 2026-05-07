@@ -1,10 +1,11 @@
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 import 'game_constants.dart';
 import 'player.dart';
 
-class Enemy extends CircleComponent {
+class Enemy extends CircleComponent with CollisionCallbacks {
   final Player player;
   final double speed;
 
@@ -14,6 +15,11 @@ class Enemy extends CircleComponent {
           paint: Paint()..color = color,
           anchor: Anchor.center,
         );
+
+  @override
+  Future<void> onLoad() async {
+    add(CircleHitbox());
+  }
 
   @override
   void update(double dt) {
