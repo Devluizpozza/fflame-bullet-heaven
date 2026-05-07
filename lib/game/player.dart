@@ -1,11 +1,12 @@
 import 'dart:ui';
 
 import 'package:flame/components.dart';
-import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/services.dart';
 
-class Player extends RectangleComponent with KeyboardHandler, HasGameRef<FlameGame> {
+import 'game_constants.dart';
+
+class Player extends RectangleComponent with KeyboardHandler {
   final JoystickComponent joystick;
   final double speed = 200;
   Vector2 _keyboardVelocity = Vector2.zero();
@@ -44,9 +45,9 @@ class Player extends RectangleComponent with KeyboardHandler, HasGameRef<FlameGa
       position += _keyboardVelocity * speed * dt;
     }
 
-    // Impede sair da tela
-    final half = size.x / 2;
-    position.x = position.x.clamp(half, gameRef.size.x - half);
-    position.y = position.y.clamp(half, gameRef.size.y - half);
+    // Colisão com as bordas do mapa
+    const half = 16.0;
+    position.x = position.x.clamp(half, GameConstants.mapWidth - half);
+    position.y = position.y.clamp(half, GameConstants.mapHeight - half);
   }
 }

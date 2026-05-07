@@ -1,13 +1,14 @@
 import 'package:flame/components.dart';
-import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+
+import 'game_constants.dart';
 import 'player.dart';
 
-class Enemy extends CircleComponent with HasGameRef<FlameGame> {
+class Enemy extends CircleComponent {
   final Player player;
-  final double speed = 65;
+  final double speed;
 
-  Enemy(this.player, {Color color = Colors.red})
+  Enemy(this.player, {required this.speed, Color color = Colors.red})
       : super(
           radius: 16,
           paint: Paint()..color = color,
@@ -24,8 +25,8 @@ class Enemy extends CircleComponent with HasGameRef<FlameGame> {
       position += direction * speed * dt;
     }
 
-    // Impede sair da tela
-    position.x = position.x.clamp(radius, gameRef.size.x - radius);
-    position.y = position.y.clamp(radius, gameRef.size.y - radius);
+    // Colisão com as bordas do mapa
+    position.x = position.x.clamp(radius, GameConstants.mapWidth - radius);
+    position.y = position.y.clamp(radius, GameConstants.mapHeight - radius);
   }
 }
