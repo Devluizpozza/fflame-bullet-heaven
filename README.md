@@ -1,4 +1,4 @@
-# 🜂 **Aporia Survivors**
+# 🜂 **Aporia Heaven**
 
 > *“Between chaos and order, survival is not certainty — it is contradiction.”*
 
