@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flame/camera.dart';
@@ -7,6 +8,7 @@ import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:flutter/material.dart' show Color, Colors, EdgeInsets, VoidCallback;
+import 'package:flutter/services.dart' show rootBundle;
 
 import 'enemy.dart';
 import 'game_constants.dart';
@@ -67,7 +69,7 @@ class MyGame extends FlameGame
     );
     _cam.viewport.add(joystick);
 
-    _world.add(_CheckerboardBackground());
+    _world.add(_TiledBackground());
 
     player = Player(
       joystick,
@@ -183,29 +185,42 @@ class MyGame extends FlameGame
   void quitGame() => onQuit();
 }
 
-class _CheckerboardBackground extends PositionComponent {
-  static const _tile = 32.0;
+// Usa ImageShader com TileMode.repeated — uma única draw call via GPU.
+class _TiledBackground extends PositionComponent {
+  late Paint _paint;
 
-  final _paintA = Paint()..color = const Color(0xFF888888);
-  final _paintB = Paint()..color = const Color(0xFF555555);
-
-  _CheckerboardBackground()
+  _TiledBackground()
       : super(
           position: Vector2.zero(),
           size: Vector2(GameConstants.mapWidth, GameConstants.mapHeight),
         );
 
   @override
+  Future<void> onLoad() async {
+    final data = await rootBundle.load('lib/assets/tiles/dirty_floor.png');
+    final codec = await instantiateImageCodec(data.buffer.asUint8List());
+    final frame = await codec.getNextFrame();
+    final tile = frame.image;
+
+    _paint = Paint()
+      ..shader = ImageShader(
+        tile,
+        TileMode.repeated,
+        TileMode.repeated,
+        Float64List.fromList([
+          1, 0, 0, 0,
+          0, 1, 0, 0,
+          0, 0, 1, 0,
+          0, 0, 0, 1,
+        ]),
+      );
+  }
+
+  @override
   void render(Canvas canvas) {
-    final cols = (GameConstants.mapWidth / _tile).ceil();
-    final rows = (GameConstants.mapHeight / _tile).ceil();
-    for (int x = 0; x < cols; x++) {
-      for (int y = 0; y < rows; y++) {
-        canvas.drawRect(
-          Rect.fromLTWH(x * _tile, y * _tile, _tile, _tile),
-          (x + y) % 2 == 0 ? _paintA : _paintB,
-        );
-      }
-    }
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, GameConstants.mapWidth, GameConstants.mapHeight),
+      _paint,
+    );
   }
 }
