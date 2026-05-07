@@ -3,8 +3,8 @@ import 'dart:ui';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 
-import 'enemy.dart';
-import 'game_constants.dart';
+import '../game_constants.dart';
+import 'interfaces.dart';
 
 class Projectile extends CircleComponent with CollisionCallbacks {
   static const double _speed = 400;
@@ -26,12 +26,9 @@ class Projectile extends CircleComponent with CollisionCallbacks {
   }
 
   @override
-  void onCollisionStart(
-    Set<Vector2> intersectionPoints,
-    PositionComponent other,
-  ) {
+  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints, other);
-    if (other is Enemy) {
+    if (other is Damageable) {
       other.takeDamage(3);
       removeFromParent();
     }
@@ -41,7 +38,6 @@ class Projectile extends CircleComponent with CollisionCallbacks {
   void update(double dt) {
     super.update(dt);
     position += _velocity * dt;
-
     if (position.x < 0 ||
         position.x > GameConstants.mapWidth ||
         position.y < 0 ||

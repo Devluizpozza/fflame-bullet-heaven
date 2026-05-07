@@ -3,10 +3,8 @@ import 'dart:ui';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 
-import 'player.dart';
-
 class XpOrb extends CircleComponent with CollisionCallbacks {
-  final Player player;
+  final PositionComponent target;
   final int xpValue;
   final void Function(int) onCollect;
 
@@ -16,7 +14,7 @@ class XpOrb extends CircleComponent with CollisionCallbacks {
 
   XpOrb({
     required Vector2 position,
-    required this.player,
+    required this.target,
     required this.xpValue,
     required Color color,
     required this.onCollect,
@@ -39,7 +37,6 @@ class XpOrb extends CircleComponent with CollisionCallbacks {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    // Brilho de diamante no canto superior esquerdo
     canvas.drawCircle(
       Offset(radius * 0.38, radius * 0.38),
       radius * 0.32,
@@ -48,12 +45,9 @@ class XpOrb extends CircleComponent with CollisionCallbacks {
   }
 
   @override
-  void onCollisionStart(
-    Set<Vector2> intersectionPoints,
-    PositionComponent other,
-  ) {
+  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints, other);
-    if (other is Player) {
+    if (other == target) {
       onCollect(xpValue);
       removeFromParent();
     }
@@ -62,9 +56,9 @@ class XpOrb extends CircleComponent with CollisionCallbacks {
   @override
   void update(double dt) {
     super.update(dt);
-    final toPlayer = player.position - position;
-    if (toPlayer.length < _attractRadius && toPlayer.length > 0) {
-      position += toPlayer.normalized() * _speed * dt;
+    final toTarget = target.position - position;
+    if (toTarget.length < _attractRadius && toTarget.length > 0) {
+      position += toTarget.normalized() * _speed * dt;
     }
   }
 }

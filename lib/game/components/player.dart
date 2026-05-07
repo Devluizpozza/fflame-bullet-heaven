@@ -5,12 +5,12 @@ import 'package:flame/components.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/services.dart';
 
-import 'enemy.dart';
-import 'game_constants.dart';
+import '../game_constants.dart';
+import 'interfaces.dart';
 
 class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks {
   final JoystickComponent joystick;
-  final List<Enemy> enemies;
+  final List<PositionComponent> targets;
   final void Function(Vector2 position, Vector2 direction) onFire;
   final void Function(int hp)? onHpChanged;
   final void Function()? onDeath;
@@ -30,7 +30,7 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
 
   Player(
     this.joystick, {
-    required this.enemies,
+    required this.targets,
     required this.onFire,
     this.onHpChanged,
     this.onDeath,
@@ -55,18 +55,14 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
   }
 
   @override
-  void onCollisionStart(
-    Set<Vector2> intersectionPoints,
-    PositionComponent other,
-  ) {
+  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints, other);
-    if (other is Enemy) takeDamage(1);
+    if (other is Hostile) takeDamage(1);
   }
 
   @override
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
     _keyboardVelocity = Vector2.zero();
-
     if (keysPressed.contains(LogicalKeyboardKey.keyW) ||
         keysPressed.contains(LogicalKeyboardKey.arrowUp)) _keyboardVelocity.y = -1;
     if (keysPressed.contains(LogicalKeyboardKey.keyS) ||
@@ -75,7 +71,6 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
         keysPressed.contains(LogicalKeyboardKey.arrowLeft)) _keyboardVelocity.x = -1;
     if (keysPressed.contains(LogicalKeyboardKey.keyD) ||
         keysPressed.contains(LogicalKeyboardKey.arrowRight)) _keyboardVelocity.x = 1;
-
     if (_keyboardVelocity.length > 0) _keyboardVelocity.normalize();
     return true;
   }
@@ -84,43 +79,39 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
   void update(double dt) {
     super.update(dt);
 
-    // Flash de dano
     if (_flashTimer > 0) {
       _flashTimer -= dt;
       if (_flashTimer <= 0) paint.color = _normalColor;
     }
 
-    // Movimento
     if (joystick.direction != JoystickDirection.idle) {
       position += joystick.relativeDelta * speed * dt;
     } else if (_keyboardVelocity.length > 0) {
       position += _keyboardVelocity * speed * dt;
     }
 
-    // Colisão com bordas do mapa
     const half = 16.0;
     position.x = position.x.clamp(half, GameConstants.mapWidth - half);
     position.y = position.y.clamp(half, GameConstants.mapHeight - half);
 
-    // Auto-disparo ao inimigo mais próximo dentro do raio
     _cooldown -= dt;
     if (_cooldown <= 0) {
-      final target = _nearestEnemyInRadius();
-      if (target != null) {
-        onFire(position.clone(), (target.position - position).normalized());
+      final nearest = _nearestTargetInRadius();
+      if (nearest != null) {
+        onFire(position.clone(), (nearest.position - position).normalized());
         _cooldown = _cooldownDuration;
       }
     }
   }
 
-  Enemy? _nearestEnemyInRadius() {
-    Enemy? nearest;
+  PositionComponent? _nearestTargetInRadius() {
+    PositionComponent? nearest;
     double minDist = _detectionRadius;
-    for (final enemy in enemies) {
-      final dist = (enemy.position - position).length;
+    for (final t in targets) {
+      final dist = (t.position - position).length;
       if (dist < minDist) {
         minDist = dist;
-        nearest = enemy;
+        nearest = t;
       }
     }
     return nearest;
