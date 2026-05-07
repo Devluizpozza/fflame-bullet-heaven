@@ -43,12 +43,26 @@ class Enemy extends PositionComponent with CollisionCallbacks {
   Future<void> onLoad() async {
     switch (shape) {
       case EnemyShape.circle:
-        add(CircleHitbox());
+        // Centro explícito em (16,16) — posição central do componente 32x32
+        add(CircleHitbox(
+          radius: 16,
+          anchor: Anchor.center,
+          position: Vector2(16, 16),
+        ));
       case EnemyShape.square:
-        add(RectangleHitbox());
+        // Igual ao rect visual (2,2)→(30,30)
+        add(RectangleHitbox(
+          size: Vector2(28, 28),
+          anchor: Anchor.center,
+          position: Vector2(16, 16),
+        ));
       case EnemyShape.triangle:
-        // Hitbox circular aproximado para o triângulo
-        add(CircleHitbox(radius: 14));
+        // Vértices exatos do triângulo visual
+        add(PolygonHitbox([
+          Vector2(16, 0),
+          Vector2(0, 32),
+          Vector2(32, 32),
+        ]));
     }
   }
 

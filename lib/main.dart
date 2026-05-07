@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flame/game.dart';
 import 'game/game.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Oculta status bar e navigation bar — jogo ocupa a tela toda
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
     home: _GameApp(),
@@ -36,6 +39,7 @@ class _GameAppState extends State<_GameApp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: GameWidget<MyGame>(
         key: ValueKey(_gameKey),
         game: _game,

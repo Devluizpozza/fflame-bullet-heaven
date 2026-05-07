@@ -16,11 +16,10 @@ import 'player.dart';
 import 'projectile.dart';
 import 'puddle.dart';
 
-class MyGame extends FlameGame
-    with HasKeyboardHandlerComponents, HasCollisionDetection {
+class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   final VoidCallback onQuit;
   late Player player;
-  late final World _world;
+  late final _GameWorld _world;
   late final CameraComponent _cam;
   final List<Enemy> _enemies = [];
   final _random = Random();
@@ -52,7 +51,7 @@ class MyGame extends FlameGame
   Future<void> onLoad() async {
     playerHpNotifier = ValueNotifier(Player.maxHp);
 
-    _world = World();
+    _world = _GameWorld();
     _cam = CameraComponent(world: _world);
     addAll([_world, _cam]);
 
@@ -184,6 +183,10 @@ class MyGame extends FlameGame
 
   void quitGame() => onQuit();
 }
+
+// HasCollisionDetection no World garante que a detecção opere no mesmo
+// espaço de coordenadas dos componentes — necessário no sistema CameraComponent.
+class _GameWorld extends World with HasCollisionDetection {}
 
 // Usa ImageShader com TileMode.repeated — uma única draw call via GPU.
 class _TiledBackground extends PositionComponent {
