@@ -5,6 +5,7 @@ import 'package:flame/camera.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:flutter/material.dart' show Color, Colors, EdgeInsets, VoidCallback;
 
 import 'enemy.dart';
@@ -21,6 +22,10 @@ class MyGame extends FlameGame
   late final CameraComponent _cam;
   final List<Enemy> _enemies = [];
   final _random = Random();
+
+  int killCount = 0;
+  late final ValueNotifier<int> playerHpNotifier;
+  int get playerMaxHp => Player.maxHp;
 
   static const double _spawnInterval = 3.0;
   static const int _spawnCount = 3;
@@ -43,11 +48,12 @@ class MyGame extends FlameGame
 
   @override
   Future<void> onLoad() async {
+    playerHpNotifier = ValueNotifier(Player.maxHp);
+
     _world = World();
     _cam = CameraComponent(world: _world);
     addAll([_world, _cam]);
 
-    // Joystick fixo na tela (HUD)
     final joystick = JoystickComponent(
       knob: CircleComponent(
         radius: 24,
@@ -69,6 +75,8 @@ class MyGame extends FlameGame
       onFire: (pos, dir) => _world.add(
         Projectile(position: pos, direction: dir),
       ),
+      onHpChanged: (hp) => playerHpNotifier.value = hp,
+      onDeath: _onPlayerDeath,
     )..position = Vector2(
         GameConstants.mapWidth / 2,
         GameConstants.mapHeight / 2,
@@ -76,7 +84,6 @@ class MyGame extends FlameGame
     _world.add(player);
     _cam.follow(player);
 
-    // 3 inimigos iniciais aleatórios
     for (int i = 0; i < 3; i++) {
       _spawnRandomEnemy();
     }
@@ -86,7 +93,6 @@ class MyGame extends FlameGame
   void update(double dt) {
     super.update(dt);
 
-    // Câmera clampeada nos limites do mapa
     final halfW = size.x / 2;
     final halfH = size.y / 2;
     _cam.viewfinder.position = Vector2(
@@ -94,7 +100,6 @@ class MyGame extends FlameGame
       _cam.viewfinder.position.y.clamp(halfH, GameConstants.mapHeight - halfH),
     );
 
-    // Spawn de inimigos aleatórios
     _spawnTimer += dt;
     if (_spawnTimer >= _spawnInterval) {
       _spawnTimer -= _spawnInterval;
@@ -102,6 +107,12 @@ class MyGame extends FlameGame
         _spawnRandomEnemy();
       }
     }
+  }
+
+  void _onPlayerDeath() {
+    pauseEngine();
+    overlays.remove('hud');
+    overlays.add('gameover');
   }
 
   void _spawnEnemy({
@@ -120,6 +131,7 @@ class MyGame extends FlameGame
       initialHp: initialHp,
       onDeath: (pos, c) {
         _enemies.remove(e);
+        killCount++;
         _world.add(Puddle(position: pos, color: c));
       },
     )..position = position;
@@ -130,8 +142,8 @@ class MyGame extends FlameGame
   void _spawnRandomEnemy() {
     final color = _spawnColors[_random.nextInt(_spawnColors.length)];
     final shape = EnemyShape.values[_random.nextInt(EnemyShape.values.length)];
-    final initialHp = 10 + _random.nextInt(21); // 10–30
-    final speed = 50.0 + _random.nextDouble() * 100; // 50–150
+    final initialHp = 10 + _random.nextInt(21);
+    final speed = 50.0 + _random.nextDouble() * 100;
 
     _spawnEnemy(
       speed: speed,

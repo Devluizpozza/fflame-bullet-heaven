@@ -20,6 +20,8 @@ class Enemy extends PositionComponent with CollisionCallbacks {
   int hp;
 
   static const double _unitSize = 32.0;
+  static final _barBgPaint = Paint()..color = const Color(0x99000000);
+  static final _barFillPaint = Paint()..color = const Color(0xFF4CAF50);
 
   Enemy(
     this.player, {
@@ -65,6 +67,23 @@ class Enemy extends PositionComponent with CollisionCallbacks {
           ..close();
         canvas.drawPath(path, _paint);
     }
+    _renderHpBar(canvas);
+  }
+
+  void _renderHpBar(Canvas canvas) {
+    const barW = 30.0;
+    const barH = 4.0;
+    const barX = 1.0;
+    const barY = -7.0;
+
+    canvas.drawRect(
+      const Rect.fromLTWH(barX, barY, barW, barH),
+      _barBgPaint,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(barX, barY, barW * (hp / maxHp).clamp(0.0, 1.0), barH),
+      _barFillPaint,
+    );
   }
 
   void takeDamage(int amount) {

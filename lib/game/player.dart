@@ -12,10 +12,12 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
   final JoystickComponent joystick;
   final List<Enemy> enemies;
   final void Function(Vector2 position, Vector2 direction) onFire;
+  final void Function(int hp)? onHpChanged;
+  final void Function()? onDeath;
 
   static const int maxHp = 20;
   static const double _detectionRadius = 250;
-  static const double _cooldownDuration = 0.8;
+  static const double _cooldownDuration = 0.4;
   static const double _flashDuration = 0.3;
   static const Color _normalColor = Color(0xFF2196F3);
   static const Color _hitColor = Color(0xFFE53935);
@@ -30,6 +32,8 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
     this.joystick, {
     required this.enemies,
     required this.onFire,
+    this.onHpChanged,
+    this.onDeath,
   }) : super(
           size: Vector2(32, 32),
           paint: Paint()..color = _normalColor,
@@ -42,10 +46,12 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
   }
 
   void takeDamage(int amount) {
+    if (hp <= 0) return;
     hp = (hp - amount).clamp(0, maxHp);
     _flashTimer = _flashDuration;
     paint.color = _hitColor;
-    // TODO: tratar morte do player quando hp == 0
+    onHpChanged?.call(hp);
+    if (hp <= 0) onDeath?.call();
   }
 
   @override

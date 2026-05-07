@@ -43,12 +43,15 @@ class _GameAppState extends State<_GameApp> {
           'menu': (_, game) => _MenuOverlay(game: game),
           'hud': (_, game) => _HudOverlay(game: game),
           'pause': (_, game) => _PauseOverlay(game: game),
+          'gameover': (_, game) => _GameOverOverlay(game: game),
         },
         initialActiveOverlays: const ['menu'],
       ),
     );
   }
 }
+
+// ─── Menu ────────────────────────────────────────────────────────────────────
 
 class _MenuOverlay extends StatelessWidget {
   final MyGame game;
@@ -78,6 +81,8 @@ class _MenuOverlay extends StatelessWidget {
   }
 }
 
+// ─── HUD ─────────────────────────────────────────────────────────────────────
+
 class _HudOverlay extends StatelessWidget {
   final MyGame game;
   const _HudOverlay({required this.game});
@@ -85,27 +90,100 @@ class _HudOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Align(
-        alignment: Alignment.topRight,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: GestureDetector(
-            onTap: game.pauseGame,
-            child: Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
+      child: Stack(
+        children: [
+          // Barra de vida do player — topo centralizado
+          Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: ValueListenableBuilder<int>(
+                valueListenable: game.playerHpNotifier,
+                builder: (_, hp, __) => _PlayerHpBar(
+                  hp: hp,
+                  maxHp: game.playerMaxHp,
+                ),
               ),
-              child: const Icon(Icons.pause, color: Colors.black, size: 30),
             ),
           ),
-        ),
+          // Botão de pause — topo direito
+          Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: GestureDetector(
+                onTap: game.pauseGame,
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.pause, color: Colors.black, size: 30),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
+class _PlayerHpBar extends StatelessWidget {
+  final int hp;
+  final int maxHp;
+  const _PlayerHpBar({required this.hp, required this.maxHp});
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = (hp / maxHp).clamp(0.0, 1.0);
+    final Color fillColor = ratio > 0.5
+        ? Colors.green
+        : ratio > 0.25
+            ? Colors.orange
+            : Colors.red;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$hp / $maxHp',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            decoration: TextDecoration.none,
+            shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+          ),
+        ),
+        const SizedBox(height: 3),
+        Container(
+          width: 180,
+          height: 14,
+          clipBehavior: Clip.hardEdge,
+          decoration: BoxDecoration(
+            color: Colors.black45,
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: FractionallySizedBox(
+            widthFactor: ratio,
+            alignment: Alignment.centerLeft,
+            child: Container(
+              decoration: BoxDecoration(
+                color: fillColor,
+                borderRadius: BorderRadius.circular(7),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Pause ───────────────────────────────────────────────────────────────────
 
 class _PauseOverlay extends StatelessWidget {
   final MyGame game;
@@ -135,10 +213,8 @@ class _PauseOverlay extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 20),
               ),
               onPressed: game.resumeGame,
-              child: const Text(
-                'Continuar',
-                style: TextStyle(fontSize: 24, color: Colors.black),
-              ),
+              child: const Text('Continuar',
+                  style: TextStyle(fontSize: 24, color: Colors.black)),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -147,9 +223,58 @@ class _PauseOverlay extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 20),
               ),
               onPressed: game.quitGame,
+              child: const Text('Sair',
+                  style: TextStyle(fontSize: 24, color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Game Over ───────────────────────────────────────────────────────────────
+
+class _GameOverOverlay extends StatelessWidget {
+  final MyGame game;
+  const _GameOverOverlay({required this.game});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black87,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'GAME OVER',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 52,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.none,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Inimigos eliminados: ${game.killCount}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                decoration: TextDecoration.none,
+              ),
+            ),
+            const SizedBox(height: 48),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 64, vertical: 22),
+              ),
+              onPressed: game.quitGame,
               child: const Text(
                 'Sair',
-                style: TextStyle(fontSize: 24, color: Colors.white),
+                style: TextStyle(fontSize: 26, color: Colors.black, fontWeight: FontWeight.bold),
               ),
             ),
           ],
