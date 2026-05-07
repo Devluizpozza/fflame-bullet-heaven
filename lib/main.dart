@@ -101,11 +101,35 @@ class _HudOverlay extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: Padding(
               padding: const EdgeInsets.only(top: 10),
-              child: ValueListenableBuilder<int>(
-                valueListenable: game.playerHpNotifier,
-                builder: (_, hp, __) => _PlayerHpBar(
-                  hp: hp,
-                  maxHp: game.playerMaxHp,
+              child: ValueListenableBuilder<(int, int, int)>(
+                valueListenable: game.xpNotifier,
+                builder: (_, xpTuple, __) => ValueListenableBuilder<int>(
+                  valueListenable: game.playerHpNotifier,
+                  builder: (_, hp, __) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Lv${xpTuple.$3}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.none,
+                          shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _PlayerHpBar(hp: hp, maxHp: game.playerMaxHp),
+                          const SizedBox(height: 4),
+                          _XpBar(current: xpTuple.$1, required: xpTuple.$2),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -183,6 +207,36 @@ class _PlayerHpBar extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _XpBar extends StatelessWidget {
+  final int current;
+  final int required;
+  const _XpBar({required this.current, required this.required});
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = required > 0 ? (current / required).clamp(0.0, 1.0) : 0.0;
+    return Container(
+      width: 180,
+      height: 10,
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        color: Colors.black45,
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: FractionallySizedBox(
+        widthFactor: ratio,
+        alignment: Alignment.centerLeft,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.blue,
+            borderRadius: BorderRadius.circular(5),
+          ),
+        ),
+      ),
     );
   }
 }

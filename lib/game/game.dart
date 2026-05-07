@@ -15,6 +15,7 @@ import 'game_constants.dart';
 import 'player.dart';
 import 'projectile.dart';
 import 'puddle.dart';
+import 'xp_orb.dart';
 
 class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   final VoidCallback onQuit;
@@ -27,6 +28,20 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   int killCount = 0;
   late final ValueNotifier<int> playerHpNotifier;
   int get playerMaxHp => Player.maxHp;
+
+  int level = 1;
+  int currentXp = 0;
+  late final ValueNotifier<(int, int, int)> xpNotifier;
+  int get _xpRequired => 10 << (level - 1);
+
+  void collectXp(int amount) {
+    currentXp += amount;
+    while (currentXp >= _xpRequired) {
+      currentXp -= _xpRequired;
+      level++;
+    }
+    xpNotifier.value = (currentXp, _xpRequired, level);
+  }
 
   static const double _spawnInterval = 3.0;
   static const int _spawnCount = 3;
@@ -50,6 +65,7 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   @override
   Future<void> onLoad() async {
     playerHpNotifier = ValueNotifier(Player.maxHp);
+    xpNotifier = ValueNotifier((0, _xpRequired, level));
 
     _world = _GameWorld();
     _cam = CameraComponent(world: _world);
@@ -134,6 +150,15 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
         _enemies.remove(e);
         killCount++;
         _world.add(Puddle(position: pos, color: c));
+        if (_random.nextInt(10) < 7) {
+          _world.add(XpOrb(
+            position: pos,
+            player: player,
+            xpValue: e.maxHp,
+            color: c,
+            onCollect: collectXp,
+          ));
+        }
       },
     )..position = position;
     _enemies.add(e);
