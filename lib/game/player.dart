@@ -1,10 +1,11 @@
 import 'dart:ui';
 
 import 'package:flame/components.dart';
+import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/services.dart';
 
-class Player extends RectangleComponent with KeyboardHandler {
+class Player extends RectangleComponent with KeyboardHandler, HasGameRef<FlameGame> {
   final JoystickComponent joystick;
   final double speed = 200;
   Vector2 _keyboardVelocity = Vector2.zero();
@@ -21,27 +22,15 @@ class Player extends RectangleComponent with KeyboardHandler {
     _keyboardVelocity = Vector2.zero();
 
     if (keysPressed.contains(LogicalKeyboardKey.keyW) ||
-        keysPressed.contains(LogicalKeyboardKey.arrowUp)) {
-      _keyboardVelocity.y = -1;
-    }
+        keysPressed.contains(LogicalKeyboardKey.arrowUp)) _keyboardVelocity.y = -1;
     if (keysPressed.contains(LogicalKeyboardKey.keyS) ||
-        keysPressed.contains(LogicalKeyboardKey.arrowDown)) {
-      _keyboardVelocity.y = 1;
-    }
+        keysPressed.contains(LogicalKeyboardKey.arrowDown)) _keyboardVelocity.y = 1;
     if (keysPressed.contains(LogicalKeyboardKey.keyA) ||
-        keysPressed.contains(LogicalKeyboardKey.arrowLeft)) {
-      _keyboardVelocity.x = -1;
-    }
+        keysPressed.contains(LogicalKeyboardKey.arrowLeft)) _keyboardVelocity.x = -1;
     if (keysPressed.contains(LogicalKeyboardKey.keyD) ||
-        keysPressed.contains(LogicalKeyboardKey.arrowRight)) {
-      _keyboardVelocity.x = 1;
-    }
+        keysPressed.contains(LogicalKeyboardKey.arrowRight)) _keyboardVelocity.x = 1;
 
-    // Evita NaN ao normalizar vetor zero
-    if (_keyboardVelocity.length > 0) {
-      _keyboardVelocity.normalize();
-    }
-
+    if (_keyboardVelocity.length > 0) _keyboardVelocity.normalize();
     return true;
   }
 
@@ -54,5 +43,10 @@ class Player extends RectangleComponent with KeyboardHandler {
     } else if (_keyboardVelocity.length > 0) {
       position += _keyboardVelocity * speed * dt;
     }
+
+    // Impede sair da tela
+    final half = size.x / 2;
+    position.x = position.x.clamp(half, gameRef.size.x - half);
+    position.y = position.y.clamp(half, gameRef.size.y - half);
   }
 }

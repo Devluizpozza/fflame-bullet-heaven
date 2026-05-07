@@ -4,18 +4,22 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
+import 'package:flutter/material.dart' show Colors, EdgeInsets, VoidCallback;
 
 import 'enemy.dart';
 import 'player.dart';
 
 class MyGame extends FlameGame with HasKeyboardHandlerComponents {
+  final VoidCallback onQuit;
   late Player player;
   late JoystickComponent joystick;
   final List<Enemy> enemies = [];
 
+  MyGame({required this.onQuit});
+
   @override
   Future<void> onLoad() async {
-    // Checkerboard FIRST so player/enemies render on top
+    // Checkerboard FIRST — renderiza abaixo de tudo
     final tilesX = (size.x / 32).ceil() + 1;
     final tilesY = (size.y / 32).ceil() + 1;
     for (int x = 0; x < tilesX; x++) {
@@ -33,7 +37,7 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
       }
     }
 
-    // Joystick virtual (mobile)
+    // Joystick virtual
     joystick = JoystickComponent(
       knob: CircleComponent(
         radius: 24,
@@ -47,20 +51,40 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
     );
     add(joystick);
 
-    // Player no centro da tela
+    // Player no centro
     player = Player(joystick)..position = size / 2;
     add(player);
 
-    // Inimigos em posições aleatórias
+    // 3 inimigos vermelhos — parte superior da tela
     final random = Random();
     for (int i = 0; i < 3; i++) {
-      final enemy = Enemy(player)
+      final enemy = Enemy(player, color: Colors.red)
         ..position = Vector2(
-          random.nextDouble() * size.x,
-          random.nextDouble() * size.y,
+          32 + random.nextDouble() * (size.x - 64),
+          32 + random.nextDouble() * (size.y * 0.35),
         );
       enemies.add(enemy);
       add(enemy);
     }
+
+    // 1 inimigo amarelo — abaixo do jogador
+    final yellowEnemy = Enemy(player, color: Colors.yellow)
+      ..position = Vector2(size.x / 2, size.y * 0.8);
+    enemies.add(yellowEnemy);
+    add(yellowEnemy);
   }
+
+  void pauseGame() {
+    pauseEngine();
+    overlays.remove('hud');
+    overlays.add('pause');
+  }
+
+  void resumeGame() {
+    resumeEngine();
+    overlays.remove('pause');
+    overlays.add('hud');
+  }
+
+  void quitGame() => onQuit();
 }
