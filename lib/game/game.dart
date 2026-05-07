@@ -1,15 +1,17 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flame/camera.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
-import 'package:flutter/material.dart' show Colors, EdgeInsets, VoidCallback;
+import 'package:flutter/material.dart' show Color, Colors, EdgeInsets, VoidCallback;
 
 import 'enemy.dart';
 import 'game_constants.dart';
 import 'player.dart';
 import 'projectile.dart';
+import 'puddle.dart';
 
 class MyGame extends FlameGame
     with HasKeyboardHandlerComponents, HasCollisionDetection {
@@ -18,6 +20,24 @@ class MyGame extends FlameGame
   late final World _world;
   late final CameraComponent _cam;
   final List<Enemy> _enemies = [];
+  final _random = Random();
+
+  static const double _spawnInterval = 3.0;
+  static const int _spawnCount = 3;
+  static const double _spawnMinDistance = 300.0;
+
+  static const _spawnColors = <Color>[
+    Colors.red,
+    Colors.orange,
+    Colors.green,
+    Colors.cyan,
+    Colors.purple,
+    Colors.pink,
+    Colors.lightBlue,
+    Colors.lightGreen,
+  ];
+
+  double _spawnTimer = 0;
 
   MyGame({required this.onQuit});
 
@@ -27,7 +47,7 @@ class MyGame extends FlameGame
     _cam = CameraComponent(world: _world);
     addAll([_world, _cam]);
 
-    // Joystick fixo na tela (HUD — não se move com a câmera)
+    // Joystick fixo na tela (HUD)
     final joystick = JoystickComponent(
       knob: CircleComponent(
         radius: 24,
@@ -41,12 +61,8 @@ class MyGame extends FlameGame
     );
     _cam.viewport.add(joystick);
 
-    // Fundo xadrez cobre o mapa inteiro (componente único — eficiente)
     _world.add(_CheckerboardBackground());
 
-    // Player no centro do mapa
-    // _enemies é passado por referência — estará populado quando o player
-    // começar a chamar update(), mesmo sendo criado antes dos inimigos.
     player = Player(
       joystick,
       enemies: _enemies,
@@ -58,42 +74,86 @@ class MyGame extends FlameGame
         GameConstants.mapHeight / 2,
       );
     _world.add(player);
-
-    // Câmera segue o player
     _cam.follow(player);
 
-    _spawnEnemy(speed: 70, color: Colors.red,
-        offset: Vector2(-400, -350)); // acima-esquerda
-    _spawnEnemy(speed: 85, color: Colors.green,
-        offset: Vector2(350, -300));  // acima-direita
-    _spawnEnemy(speed: 55, color: Colors.yellow,
-        offset: Vector2(0, 400));     // abaixo
-  }
-
-  void _spawnEnemy({
-    required double speed,
-    required Color color,
-    required Vector2 offset,
-  }) {
-    final e = Enemy(player, speed: speed, color: color)
-      ..position = Vector2(
-        GameConstants.mapWidth / 2 + offset.x,
-        GameConstants.mapHeight / 2 + offset.y,
-      );
-    _enemies.add(e);
-    _world.add(e);
+    // 3 inimigos iniciais aleatórios
+    for (int i = 0; i < 3; i++) {
+      _spawnRandomEnemy();
+    }
   }
 
   @override
   void update(double dt) {
     super.update(dt);
-    // Impede a câmera de mostrar fora dos limites do mapa
+
+    // Câmera clampeada nos limites do mapa
     final halfW = size.x / 2;
     final halfH = size.y / 2;
     _cam.viewfinder.position = Vector2(
       _cam.viewfinder.position.x.clamp(halfW, GameConstants.mapWidth - halfW),
       _cam.viewfinder.position.y.clamp(halfH, GameConstants.mapHeight - halfH),
     );
+
+    // Spawn de inimigos aleatórios
+    _spawnTimer += dt;
+    if (_spawnTimer >= _spawnInterval) {
+      _spawnTimer -= _spawnInterval;
+      for (int i = 0; i < _spawnCount; i++) {
+        _spawnRandomEnemy();
+      }
+    }
+  }
+
+  void _spawnEnemy({
+    required double speed,
+    required Color color,
+    required EnemyShape shape,
+    required int initialHp,
+    required Vector2 position,
+  }) {
+    late final Enemy e;
+    e = Enemy(
+      player,
+      speed: speed,
+      color: color,
+      shape: shape,
+      initialHp: initialHp,
+      onDeath: (pos, c) {
+        _enemies.remove(e);
+        _world.add(Puddle(position: pos, color: c));
+      },
+    )..position = position;
+    _enemies.add(e);
+    _world.add(e);
+  }
+
+  void _spawnRandomEnemy() {
+    final color = _spawnColors[_random.nextInt(_spawnColors.length)];
+    final shape = EnemyShape.values[_random.nextInt(EnemyShape.values.length)];
+    final initialHp = 10 + _random.nextInt(21); // 10–30
+    final speed = 50.0 + _random.nextDouble() * 100; // 50–150
+
+    _spawnEnemy(
+      speed: speed,
+      color: color,
+      shape: shape,
+      initialHp: initialHp,
+      position: _randomSpawnPosition(),
+    );
+  }
+
+  Vector2 _randomSpawnPosition() {
+    Vector2 pos;
+    var tries = 0;
+    do {
+      pos = Vector2(
+        _random.nextDouble() * GameConstants.mapWidth,
+        _random.nextDouble() * GameConstants.mapHeight,
+      );
+      tries++;
+    } while (
+        (pos - player.position).length < _spawnMinDistance && tries < 20);
+    return pos;
   }
 
   void pauseGame() {
@@ -111,8 +171,6 @@ class MyGame extends FlameGame
   void quitGame() => onQuit();
 }
 
-// Renderiza o xadrez inteiro em um único componente — muito mais eficiente
-// do que adicionar milhares de RectangleComponents individuais.
 class _CheckerboardBackground extends PositionComponent {
   static const _tile = 32.0;
 

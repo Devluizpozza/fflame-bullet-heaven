@@ -32,6 +32,7 @@ class Projectile extends CircleComponent with CollisionCallbacks {
   ) {
     super.onCollisionStart(intersectionPoints, other);
     if (other is Enemy) {
+      other.takeDamage(3);
       removeFromParent();
     }
   }
@@ -41,7 +42,6 @@ class Projectile extends CircleComponent with CollisionCallbacks {
     super.update(dt);
     position += _velocity * dt;
 
-    // Remove ao sair dos limites do mapa
     if (position.x < 0 ||
         position.x > GameConstants.mapWidth ||
         position.y < 0 ||

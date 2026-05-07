@@ -13,12 +13,18 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
   final List<Enemy> enemies;
   final void Function(Vector2 position, Vector2 direction) onFire;
 
+  static const int maxHp = 20;
   static const double _detectionRadius = 250;
-  static const double _cooldownDuration = 0.5;
+  static const double _cooldownDuration = 0.8;
+  static const double _flashDuration = 0.3;
+  static const Color _normalColor = Color(0xFF2196F3);
+  static const Color _hitColor = Color(0xFFE53935);
 
+  int hp = maxHp;
   final double speed = 200;
   Vector2 _keyboardVelocity = Vector2.zero();
   double _cooldown = 0;
+  double _flashTimer = 0;
 
   Player(
     this.joystick, {
@@ -26,7 +32,7 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
     required this.onFire,
   }) : super(
           size: Vector2(32, 32),
-          paint: Paint()..color = const Color(0xFF2196F3),
+          paint: Paint()..color = _normalColor,
           anchor: Anchor.center,
         );
 
@@ -35,14 +41,20 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
     add(RectangleHitbox());
   }
 
+  void takeDamage(int amount) {
+    hp = (hp - amount).clamp(0, maxHp);
+    _flashTimer = _flashDuration;
+    paint.color = _hitColor;
+    // TODO: tratar morte do player quando hp == 0
+  }
+
   @override
   void onCollisionStart(
     Set<Vector2> intersectionPoints,
     PositionComponent other,
   ) {
     super.onCollisionStart(intersectionPoints, other);
-    // Stub para sistema de vida: quando inimigo encostar no player
-    // if (other is Enemy) { takeDamage(); }
+    if (other is Enemy) takeDamage(1);
   }
 
   @override
@@ -66,6 +78,12 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
   void update(double dt) {
     super.update(dt);
 
+    // Flash de dano
+    if (_flashTimer > 0) {
+      _flashTimer -= dt;
+      if (_flashTimer <= 0) paint.color = _normalColor;
+    }
+
     // Movimento
     if (joystick.direction != JoystickDirection.idle) {
       position += joystick.relativeDelta * speed * dt;
@@ -83,8 +101,7 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
     if (_cooldown <= 0) {
       final target = _nearestEnemyInRadius();
       if (target != null) {
-        final direction = target.position - position;
-        onFire(position.clone(), direction.normalized());
+        onFire(position.clone(), (target.position - position).normalized());
         _cooldown = _cooldownDuration;
       }
     }
