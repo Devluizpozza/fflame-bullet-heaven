@@ -10,6 +10,7 @@ class Enemy extends CircleComponent {
       : super(
           radius: 16,
           paint: Paint()..color = Colors.red,
+          anchor: Anchor.center,
         );
 
   @override

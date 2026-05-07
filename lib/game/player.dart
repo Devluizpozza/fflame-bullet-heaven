@@ -1,40 +1,46 @@
 import 'dart:ui';
 
 import 'package:flame/components.dart';
+import 'package:flame/input.dart';
 import 'package:flutter/services.dart';
 
 class Player extends RectangleComponent with KeyboardHandler {
+  final JoystickComponent joystick;
   final double speed = 200;
-  Vector2 velocity = Vector2.zero();
+  Vector2 _keyboardVelocity = Vector2.zero();
 
-  Player()
+  Player(this.joystick)
     : super(
         size: Vector2(32, 32),
-        paint: Paint()..color = const Color(0xFF0000FF),
+        paint: Paint()..color = const Color(0xFF2196F3),
+        anchor: Anchor.center,
       );
 
   @override
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
-    velocity = Vector2.zero();
+    _keyboardVelocity = Vector2.zero();
 
     if (keysPressed.contains(LogicalKeyboardKey.keyW) ||
         keysPressed.contains(LogicalKeyboardKey.arrowUp)) {
-      velocity.y = -1;
+      _keyboardVelocity.y = -1;
     }
     if (keysPressed.contains(LogicalKeyboardKey.keyS) ||
         keysPressed.contains(LogicalKeyboardKey.arrowDown)) {
-      velocity.y = 1;
+      _keyboardVelocity.y = 1;
     }
     if (keysPressed.contains(LogicalKeyboardKey.keyA) ||
         keysPressed.contains(LogicalKeyboardKey.arrowLeft)) {
-      velocity.x = -1;
+      _keyboardVelocity.x = -1;
     }
     if (keysPressed.contains(LogicalKeyboardKey.keyD) ||
         keysPressed.contains(LogicalKeyboardKey.arrowRight)) {
-      velocity.x = 1;
+      _keyboardVelocity.x = 1;
     }
 
-    velocity.normalize();
+    // Evita NaN ao normalizar vetor zero
+    if (_keyboardVelocity.length > 0) {
+      _keyboardVelocity.normalize();
+    }
 
     return true;
   }
@@ -42,6 +48,11 @@ class Player extends RectangleComponent with KeyboardHandler {
   @override
   void update(double dt) {
     super.update(dt);
-    position += velocity * speed * dt;
+
+    if (joystick.direction != JoystickDirection.idle) {
+      position += joystick.relativeDelta * speed * dt;
+    } else if (_keyboardVelocity.length > 0) {
+      position += _keyboardVelocity * speed * dt;
+    }
   }
 }
