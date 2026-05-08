@@ -17,12 +17,15 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
 
   static const int maxHp = 20;
   static const double _detectionRadius = 250;
-  static const double _cooldownDuration = 0.4;
   static const double _flashDuration = 0.3;
   static const Color _normalColor = Color(0xFF2196F3);
   static const Color _hitColor = Color(0xFFE53935);
+  static const double _projectileSpacing = 14.0;
 
   int hp = maxHp;
+  double cooldownDuration = 0.4;
+  int projectileCount = 1;
+
   final double speed = 200;
   Vector2 _keyboardVelocity = Vector2.zero();
   double _cooldown = 0;
@@ -98,9 +101,20 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
     if (_cooldown <= 0) {
       final nearest = _nearestTargetInRadius();
       if (nearest != null) {
-        onFire(position.clone(), (nearest.position - position).normalized());
-        _cooldown = _cooldownDuration;
+        _fireAt(nearest.position);
+        _cooldown = cooldownDuration;
       }
+    }
+  }
+
+  void _fireAt(Vector2 targetPos) {
+    final dir = (targetPos - position).normalized();
+    // Perpendicular ao eixo de disparo, para distribuir projéteis lado a lado
+    final perp = Vector2(-dir.y, dir.x);
+    final halfSpread = (projectileCount - 1) / 2.0;
+    for (int i = 0; i < projectileCount; i++) {
+      final offset = perp * ((i - halfSpread) * _projectileSpacing);
+      onFire(position.clone() + offset, dir);
     }
   }
 

@@ -4,8 +4,9 @@ class XpSystem {
   int level = 1;
   int currentXp = 0;
   late final ValueNotifier<(int, int, int)> notifier;
+  final void Function()? onLevelUp;
 
-  XpSystem() {
+  XpSystem({this.onLevelUp}) {
     notifier = ValueNotifier((0, xpRequired, 1));
   }
 
@@ -16,6 +17,7 @@ class XpSystem {
     while (currentXp >= xpRequired) {
       currentXp -= xpRequired;
       level++;
+      onLevelUp?.call();
     }
     notifier.value = (currentXp, xpRequired, level);
   }

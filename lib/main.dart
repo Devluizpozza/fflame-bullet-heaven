@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flame/game.dart';
 import 'game/game.dart';
+import 'game/skills/skill_offer.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,9 +80,131 @@ class _GameAppState extends State<_GameApp> with WidgetsBindingObserver {
             'hud': (_, game) => _HudOverlay(game: game),
             'pause': (_, game) => _PauseOverlay(game: game),
             'gameover': (_, game) => _GameOverOverlay(game: game),
+            'levelup': (_, game) => _LevelUpOverlay(game: game),
           },
           initialActiveOverlays: const ['menu'],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Level Up ────────────────────────────────────────────────────────────────
+
+class _LevelUpOverlay extends StatelessWidget {
+  final MyGame game;
+  const _LevelUpOverlay({required this.game});
+
+  @override
+  Widget build(BuildContext context) {
+    final offers = game.currentLevelUpOffers;
+    return Container(
+      color: const Color(0xCC000000),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'NÍVEL ACIMA!',
+              style: TextStyle(
+                color: Color(0xFFFFD700),
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.none,
+                shadows: [Shadow(blurRadius: 8, color: Colors.black)],
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Escolha uma habilidade',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                decoration: TextDecoration.none,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: offers.map((o) => _SkillCard(offer: o)).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SkillCard extends StatelessWidget {
+  final SkillOffer offer;
+  const _SkillCard({required this.offer});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: offer.onSelect,
+      child: Container(
+        width: 150,
+        margin: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A2E),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFFFD700), width: 2),
+          boxShadow: const [
+            BoxShadow(color: Color(0x66FFD700), blurRadius: 12, spreadRadius: 1),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Badge de nível
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFD700),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: Text(
+                'Nível ${offer.nextLevel}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                children: [
+                  Text(
+                    offer.title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    offer.description,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white60,
+                      fontSize: 12,
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

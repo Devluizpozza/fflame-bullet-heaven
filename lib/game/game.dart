@@ -10,6 +10,7 @@ import 'package:flutter/material.dart' show EdgeInsets, VoidCallback;
 import 'components/player.dart';
 import 'components/projectile.dart';
 import 'game_constants.dart';
+import 'skills/skill_offer.dart';
 import 'systems/spawn_system.dart';
 import 'systems/xp_system.dart';
 import 'world/game_world.dart';
@@ -28,6 +29,20 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   int get playerMaxHp => Player.maxHp;
   ValueNotifier<(int, int, int)> get xpNotifier => _xpSystem.notifier;
 
+  // ── Skill state ──────────────────────────────────────────────
+  int _projectileSpeedLevel = 0;
+  int _pendingLevelUps = 0;
+
+  List<SkillOffer> get currentLevelUpOffers => List.generate(
+        3,
+        (_) => SkillOffer(
+          title: 'Project Speed',
+          description: 'Aumenta a velocidade de ataque',
+          nextLevel: _projectileSpeedLevel + 1,
+          onSelect: _applyProjectileSpeed,
+        ),
+      );
+
   MyGame({required this.onQuit});
 
   @override
@@ -36,7 +51,7 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   @override
   Future<void> onLoad() async {
     playerHpNotifier = ValueNotifier(Player.maxHp);
-    _xpSystem = XpSystem();
+    _xpSystem = XpSystem(onLevelUp: _onLevelUp);
 
     _world = GameWorld();
     _cam = CameraComponent(world: _world);
@@ -85,6 +100,44 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
       _cam.viewfinder.position.y.clamp(halfH, GameConstants.mapHeight - halfH),
     );
   }
+
+  // ── Skill application ────────────────────────────────────────
+
+  void _applyProjectileSpeed() {
+    _projectileSpeedLevel++;
+    // Reduz o cooldown em 0.05s por nível (mínimo 0.05s)
+    player.cooldownDuration = (0.4 - _projectileSpeedLevel * 0.05).clamp(0.05, 0.4);
+    // A cada 3 níveis, adiciona um projétil paralelo
+    player.projectileCount = 1 + _projectileSpeedLevel ~/ 3;
+    _onSkillSelected();
+  }
+
+  // ── Level-up flow ────────────────────────────────────────────
+
+  void _onLevelUp() {
+    _pendingLevelUps++;
+    if (_pendingLevelUps == 1) _showLevelUpOverlay();
+  }
+
+  void _showLevelUpOverlay() {
+    pauseEngine();
+    overlays.remove('hud');
+    overlays.add('levelup');
+  }
+
+  void _onSkillSelected() {
+    _pendingLevelUps--;
+    overlays.remove('levelup');
+    if (_pendingLevelUps > 0) {
+      // Mais um level pendente: mostra o overlay de novo imediatamente
+      _showLevelUpOverlay();
+    } else {
+      overlays.add('hud');
+      resumeEngine();
+    }
+  }
+
+  // ── Game flow ────────────────────────────────────────────────
 
   void _onPlayerDeath() {
     pauseEngine();
