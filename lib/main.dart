@@ -63,7 +63,15 @@ class _GameAppState extends State<_GameApp> with WidgetsBindingObserver {
       value: _overlayStyle,
       child: ColoredBox(
         color: Colors.black,
-        child: GameWidget<MyGame>(
+        child: MediaQuery(
+          // Remove system insets so GameWidget recebe as constraints da tela
+          // física completa, sem recuar nas barras de sistema
+          data: MediaQuery.of(context).copyWith(
+            padding: EdgeInsets.zero,
+            viewPadding: EdgeInsets.zero,
+            viewInsets: EdgeInsets.zero,
+          ),
+          child: GameWidget<MyGame>(
           key: ValueKey(_gameKey),
           game: _game,
           overlayBuilderMap: {
@@ -73,6 +81,7 @@ class _GameAppState extends State<_GameApp> with WidgetsBindingObserver {
             'gameover': (_, game) => _GameOverOverlay(game: game),
           },
           initialActiveOverlays: const ['menu'],
+          ),
         ),
       ),
     );

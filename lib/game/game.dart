@@ -31,6 +31,9 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   MyGame({required this.onQuit});
 
   @override
+  Color backgroundColor() => const Color(0xFF000000);
+
+  @override
   Future<void> onLoad() async {
     playerHpNotifier = ValueNotifier(Player.maxHp);
     _xpSystem = XpSystem();
