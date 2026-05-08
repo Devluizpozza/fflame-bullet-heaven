@@ -3,15 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flame/game.dart';
 import 'game/game.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Oculta status bar e navigation bar — jogo ocupa a tela toda
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    systemNavigationBarColor: Colors.black,
-    systemNavigationBarDividerColor: Colors.black,
-  ));
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
     home: _GameApp(),
@@ -24,14 +18,36 @@ class _GameApp extends StatefulWidget {
   State<_GameApp> createState() => _GameAppState();
 }
 
-class _GameAppState extends State<_GameApp> {
+class _GameAppState extends State<_GameApp> with WidgetsBindingObserver {
   late MyGame _game;
   int _gameKey = 0;
+
+  static const _overlayStyle = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarContrastEnforced: false,
+    systemStatusBarContrastEnforced: false,
+  );
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _game = MyGame(onQuit: _restart);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
   }
 
   void _restart() {
@@ -43,18 +59,21 @@ class _GameAppState extends State<_GameApp> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: GameWidget<MyGame>(
-        key: ValueKey(_gameKey),
-        game: _game,
-        overlayBuilderMap: {
-          'menu': (_, game) => _MenuOverlay(game: game),
-          'hud': (_, game) => _HudOverlay(game: game),
-          'pause': (_, game) => _PauseOverlay(game: game),
-          'gameover': (_, game) => _GameOverOverlay(game: game),
-        },
-        initialActiveOverlays: const ['menu'],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _overlayStyle,
+      child: ColoredBox(
+        color: Colors.black,
+        child: GameWidget<MyGame>(
+          key: ValueKey(_gameKey),
+          game: _game,
+          overlayBuilderMap: {
+            'menu': (_, game) => _MenuOverlay(game: game),
+            'hud': (_, game) => _HudOverlay(game: game),
+            'pause': (_, game) => _PauseOverlay(game: game),
+            'gameover': (_, game) => _GameOverOverlay(game: game),
+          },
+          initialActiveOverlays: const ['menu'],
+        ),
       ),
     );
   }
