@@ -233,6 +233,7 @@ class _MenuOverlay extends StatelessWidget {
           onPressed: () {
             game.overlays.remove('menu');
             game.overlays.add('hud');
+            game.resumeEngine();
           },
           child: const Text(
             'Jogar',

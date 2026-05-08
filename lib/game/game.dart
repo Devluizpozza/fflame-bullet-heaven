@@ -89,6 +89,9 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
       onXpCollect: _xpSystem.collect,
       onHealPlayer: player.heal,
     ));
+
+    // Inicia pausado — engine só começa quando o jogador pressionar "Jogar"
+    pauseEngine();
   }
 
   @override
@@ -158,5 +161,8 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
     overlays.add('hud');
   }
 
-  void quitGame() => onQuit();
+  void quitGame() {
+    pauseEngine();
+    onQuit();
+  }
 }
