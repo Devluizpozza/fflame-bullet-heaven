@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flame/geometry.dart';
 
 import '../game_constants.dart';
 import 'interfaces.dart';
@@ -37,7 +38,31 @@ class Projectile extends CircleComponent with CollisionCallbacks {
   @override
   void update(double dt) {
     super.update(dt);
+
+    final origin = position.clone();
     position += _velocity * dt;
+
+    // CCD: varre o caminho percorrido neste frame para evitar tunneling
+    final world = parent;
+    if (world is HasCollisionDetection && isMounted) {
+      final dir = _velocity.normalized();
+      final sweepDist = (_velocity * dt).length + radius;
+      final ray = Ray2(origin: origin, direction: dir);
+      final ownHitboxes = children.query<ShapeHitbox>().toList();
+      final cd = world.collisionDetection;
+      final result = cd is StandardCollisionDetection
+          ? cd.raycast(ray, maxDistance: sweepDist, ignoreHitboxes: ownHitboxes)
+          : null;
+      if (result != null && result.isActive) {
+        final hit = result.hitbox?.parent;
+        if (hit is Damageable) {
+          hit.takeDamage(3);
+          removeFromParent();
+          return;
+        }
+      }
+    }
+
     if (position.x < 0 ||
         position.x > GameConstants.mapWidth ||
         position.y < 0 ||

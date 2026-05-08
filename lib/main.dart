@@ -7,6 +7,11 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   // Oculta status bar e navigation bar — jogo ocupa a tela toda
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemNavigationBarColor: Colors.black,
+    systemNavigationBarDividerColor: Colors.black,
+  ));
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
     home: _GameApp(),
