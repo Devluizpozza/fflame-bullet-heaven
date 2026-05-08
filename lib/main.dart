@@ -125,9 +125,13 @@ class _LevelUpOverlay extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: offers.map((o) => _SkillCard(offer: o)).toList(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: offers
+                    .map((o) => Expanded(child: _SkillCard(offer: o)))
+                    .toList(),
+              ),
             ),
           ],
         ),
@@ -145,8 +149,7 @@ class _SkillCard extends StatelessWidget {
     return GestureDetector(
       onTap: offer.onSelect,
       child: Container(
-        width: 150,
-        margin: const EdgeInsets.symmetric(horizontal: 10),
+        margin: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
           color: const Color(0xFF1A1A2E),
           borderRadius: BorderRadius.circular(14),
@@ -250,6 +253,7 @@ class _HudOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
+      minimum: const EdgeInsets.only(top: 36),
       child: Stack(
         children: [
           // Barra de vida do player — topo centralizado
