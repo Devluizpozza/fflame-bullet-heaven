@@ -87,6 +87,7 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
       enemies: _enemies,
       onKill: () => killCount++,
       onXpCollect: _xpSystem.collect,
+      onHealPlayer: player.heal,
     ));
   }
 

@@ -57,6 +57,12 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
     if (hp <= 0) onDeath?.call();
   }
 
+  void heal(int amount) {
+    if (hp <= 0 || hp >= maxHp) return;
+    hp = (hp + amount).clamp(0, maxHp);
+    onHpChanged?.call(hp);
+  }
+
   @override
   void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints, other);

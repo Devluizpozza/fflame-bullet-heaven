@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Color, Colors;
 
 import '../components/enemy.dart';
+import '../components/health_drop.dart';
 import '../components/puddle.dart';
 import '../components/xp_orb.dart';
 import '../game_constants.dart';
@@ -13,6 +14,7 @@ class SpawnSystem extends Component {
   final List<PositionComponent> enemies;
   final void Function() onKill;
   final void Function(int) onXpCollect;
+  final void Function(int) onHealPlayer;
 
   static const double interval = 3.0;
   static const int countPerWave = 3;
@@ -38,6 +40,7 @@ class SpawnSystem extends Component {
     required this.enemies,
     required this.onKill,
     required this.onXpCollect,
+    required this.onHealPlayer,
   });
 
   @override
@@ -94,6 +97,13 @@ class SpawnSystem extends Component {
             xpValue: e.maxHp,
             color: c,
             onCollect: onXpCollect,
+          ));
+        }
+        if (_random.nextInt(10) == 0) {
+          parent!.add(HealthDrop(
+            position: pos,
+            target: playerRef,
+            onCollect: () => onHealPlayer(4),
           ));
         }
       },
