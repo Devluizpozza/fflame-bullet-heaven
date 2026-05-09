@@ -49,14 +49,16 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
     final frameW = img.width.toDouble();
     final frameH = img.height / 3.0;
 
-    // Mantém 32px na altura; ajusta largura proporcionalmente
-    final scale = 32.0 / frameH;
-    size = Vector2(frameW * scale, 32.0);
+    // Mantém 48px na altura; ajusta largura proporcionalmente
+    const targetHeight = 48.0;
+    final scale = targetHeight / frameH;
+    size = Vector2(frameW * scale, targetHeight);
 
     animation = SpriteAnimation.fromFrameData(
       img,
       SpriteAnimationData.sequenced(
         amount: 3,
+        amountPerRow: 1, // spritesheet em coluna única (3 linhas)
         textureSize: Vector2(frameW, frameH),
         stepTime: 0.15,
         loop: true,
@@ -70,7 +72,13 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
       anchor: Anchor.topLeft,
     );
     add(_hitFlash);
-    add(RectangleHitbox());
+
+    // Hitbox menor que o sprite visual para colisão mais justa
+    add(RectangleHitbox(
+      size: Vector2(size.x * 0.5, size.y * 0.5),
+      anchor: Anchor.center,
+      position: size / 2,
+    ));
   }
 
   void takeDamage(int amount) {
