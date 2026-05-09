@@ -34,4 +34,7 @@ flutter:
 
   assets:
     - lib/assets/
+    - lib/assets/art/
+    - lib/assets/tiles/
+    - lib/assets/characteres/
 

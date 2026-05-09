@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import '../game_constants.dart';
 import 'interfaces.dart';
 
-class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks {
+class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCallbacks {
   final JoystickComponent joystick;
   final List<PositionComponent> targets;
   final void Function(Vector2 position, Vector2 direction) onFire;
@@ -18,8 +18,6 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
   static const int maxHp = 20;
   static const double _detectionRadius = 250;
   static const double _flashDuration = 0.3;
-  static const Color _normalColor = Color(0xFF2196F3);
-  static const Color _hitColor = Color(0xFFE53935);
   static const double _projectileSpacing = 14.0;
 
   int hp = maxHp;
@@ -31,20 +29,47 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
   double _cooldown = 0;
   double _flashTimer = 0;
 
+  late final RectangleComponent _hitFlash;
+
   Player(
     this.joystick, {
     required this.targets,
     required this.onFire,
     this.onHpChanged,
     this.onDeath,
-  }) : super(
-          size: Vector2(32, 32),
-          paint: Paint()..color = _normalColor,
-          anchor: Anchor.center,
-        );
+  }) : super(anchor: Anchor.center);
 
   @override
   Future<void> onLoad() async {
+    final data = await rootBundle.load('lib/assets/characteres/idle_player.png');
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final frame = await codec.getNextFrame();
+    final img = frame.image;
+
+    final frameW = img.width.toDouble();
+    final frameH = img.height / 3.0;
+
+    // Mantém 32px na altura; ajusta largura proporcionalmente
+    final scale = 32.0 / frameH;
+    size = Vector2(frameW * scale, 32.0);
+
+    animation = SpriteAnimation.fromFrameData(
+      img,
+      SpriteAnimationData.sequenced(
+        amount: 3,
+        textureSize: Vector2(frameW, frameH),
+        stepTime: 0.15,
+        loop: true,
+      ),
+    );
+
+    _hitFlash = RectangleComponent(
+      size: size,
+      paint: ui.Paint()..color = const ui.Color(0x00E53935),
+      position: Vector2.zero(),
+      anchor: Anchor.topLeft,
+    );
+    add(_hitFlash);
     add(RectangleHitbox());
   }
 
@@ -52,7 +77,7 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
     if (hp <= 0) return;
     hp = (hp - amount).clamp(0, maxHp);
     _flashTimer = _flashDuration;
-    paint.color = _hitColor;
+    _hitFlash.paint.color = const ui.Color(0x88E53935);
     onHpChanged?.call(hp);
     if (hp <= 0) onDeath?.call();
   }
@@ -90,7 +115,7 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
 
     if (_flashTimer > 0) {
       _flashTimer -= dt;
-      if (_flashTimer <= 0) paint.color = _normalColor;
+      if (_flashTimer <= 0) _hitFlash.paint.color = const ui.Color(0x00E53935);
     }
 
     if (joystick.direction != JoystickDirection.idle) {
@@ -99,9 +124,8 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
       position += _keyboardVelocity * speed * dt;
     }
 
-    const half = 16.0;
-    position.x = position.x.clamp(half, GameConstants.mapWidth - half);
-    position.y = position.y.clamp(half, GameConstants.mapHeight - half);
+    position.x = position.x.clamp(size.x / 2, GameConstants.mapWidth - size.x / 2);
+    position.y = position.y.clamp(size.y / 2, GameConstants.mapHeight - size.y / 2);
 
     _cooldown -= dt;
     if (_cooldown <= 0) {
@@ -115,7 +139,6 @@ class Player extends RectangleComponent with KeyboardHandler, CollisionCallbacks
 
   void _fireAt(Vector2 targetPos) {
     final dir = (targetPos - position).normalized();
-    // Perpendicular ao eixo de disparo, para distribuir projéteis lado a lado
     final perp = Vector2(-dir.y, dir.x);
     final halfSpread = (projectileCount - 1) / 2.0;
     for (int i = 0; i < projectileCount; i++) {
