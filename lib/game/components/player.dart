@@ -22,6 +22,11 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
   static const double _flashDuration = 0.3;
   static const double _projectileSpacing = 14.0;
 
+  static const _hitColorFilter = ui.ColorFilter.mode(
+    ui.Color(0x66FF0000), // vermelho com ~0.4 de opacidade
+    ui.BlendMode.srcATop, // aplica apenas nos pixels opacos do sprite
+  );
+
   int hp = maxHp;
   double cooldownDuration = 0.4;
   int projectileCount = 1;
@@ -30,12 +35,11 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
   Vector2 _keyboardVelocity = Vector2.zero();
   double _cooldown = 0;
   double _flashTimer = 0;
-  _HDir _lastHDir = _HDir.right;
+  _HDir? _lastHDir;
 
   late SpriteAnimation _animIdle;
   late SpriteAnimation _animMoveLeft;
   late SpriteAnimation _animMoveRight;
-  late final RectangleComponent _hitFlash;
 
   Player(
     this.joystick, {
@@ -51,24 +55,15 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
     _animMoveLeft = await _loadAnim('lib/assets/characteres/player_move_left.png', 4);
     _animMoveRight = await _loadAnim('lib/assets/characteres/player_move_right.png', 4);
 
-    // Calcula tamanho a partir do idle (referência)
     final data = await rootBundle.load('lib/assets/characteres/idle_player.png');
     final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     final frame = await codec.getNextFrame();
     final img = frame.image;
     const targetHeight = 48.0;
-    final scale = targetHeight / (img.height / 3.0);
-    size = Vector2(img.width * scale, targetHeight);
+    final s = targetHeight / (img.height / 3.0);
+    size = Vector2(img.width * s, targetHeight);
 
     animation = _animIdle;
-
-    _hitFlash = RectangleComponent(
-      size: size,
-      paint: ui.Paint()..color = const ui.Color(0x00E53935),
-      position: Vector2.zero(),
-      anchor: Anchor.topLeft,
-    );
-    add(_hitFlash);
 
     add(RectangleHitbox(
       size: Vector2(size.x * 0.5, size.y * 0.5),
@@ -102,12 +97,18 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
       final ax = moveDir.x.abs();
       final ay = moveDir.y.abs();
       if (ax >= ay) {
-        // Movimento horizontal dominante — atualiza último lado
         _lastHDir = moveDir.x < 0 ? _HDir.left : _HDir.right;
       }
-      // Qualquer direção (horizontal, vertical cima ou baixo) usa o último lado horizontal
-      next = _lastHDir == _HDir.left ? _animMoveLeft : _animMoveRight;
+      next = switch (_lastHDir) {
+        _HDir.left => _animMoveLeft,
+        _HDir.right => _animMoveRight,
+        null => _animIdle,
+      };
     }
+
+    // Espelha o idle quando o último lado foi esquerda
+    scale.x = (next == _animIdle && _lastHDir == _HDir.left) ? -1 : 1;
+
     if (animation != next) animation = next;
   }
 
@@ -115,7 +116,7 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
     if (hp <= 0) return;
     hp = (hp - amount).clamp(0, maxHp);
     _flashTimer = _flashDuration;
-    _hitFlash.paint.color = const ui.Color(0x88E53935);
+    paint.colorFilter = _hitColorFilter;
     onHpChanged?.call(hp);
     if (hp <= 0) onDeath?.call();
   }
@@ -153,13 +154,12 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
 
     if (_flashTimer > 0) {
       _flashTimer -= dt;
-      if (_flashTimer <= 0) _hitFlash.paint.color = const ui.Color(0x00E53935);
+      if (_flashTimer <= 0) paint.colorFilter = null;
     }
 
     Vector2 moveDir = Vector2.zero();
     if (joystick.direction != JoystickDirection.idle) {
       final delta = joystick.relativeDelta;
-      // Dead zone: ignora deltas minúsculos do snap-back do joystick
       if (delta.length > 0.15) moveDir = delta;
     } else if (_keyboardVelocity.length > 0) {
       moveDir = _keyboardVelocity;

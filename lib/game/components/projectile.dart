@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flame/collisions.dart';
@@ -48,8 +49,8 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks {
       ),
     );
 
-    // Orienta o sprite na direção do movimento
-    angle = _velocity.screenAngle();
+    // atan2(y, x): sprite natural aponta para direita → rotação correta para qualquer direção
+    angle = math.atan2(_velocity.y, _velocity.x);
 
     add(CircleHitbox(
       radius: _radius * 0.5,
