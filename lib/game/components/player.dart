@@ -48,10 +48,10 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
 
   @override
   Future<void> onLoad() async {
-    _animIdle = await _loadAnim('lib/assets/characteres/idle_player.png');
-    _animMoveLeft = await _loadAnim('lib/assets/characteres/player_move_left.png');
-    _animMoveRight = await _loadAnim('lib/assets/characteres/player_move_right.png');
-    _animMoveBottom = await _loadAnim('lib/assets/characteres/player_move_bottom.png');
+    _animIdle = await _loadAnim('lib/assets/characteres/idle_player.png', 3);
+    _animMoveLeft = await _loadAnim('lib/assets/characteres/player_move_left.png', 4);
+    _animMoveRight = await _loadAnim('lib/assets/characteres/player_move_right.png', 4);
+    _animMoveBottom = await _loadAnim('lib/assets/characteres/player_move_bottom.png', 2);
 
     // Calcula tamanho a partir do idle (referência)
     final data = await rootBundle.load('lib/assets/characteres/idle_player.png');
@@ -79,7 +79,7 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
     ));
   }
 
-  Future<SpriteAnimation> _loadAnim(String path) async {
+  Future<SpriteAnimation> _loadAnim(String path, int frames) async {
     final data = await rootBundle.load(path);
     final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     final frame = await codec.getNextFrame();
@@ -87,9 +87,9 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
     return SpriteAnimation.fromFrameData(
       img,
       SpriteAnimationData.sequenced(
-        amount: 3,
+        amount: frames,
         amountPerRow: 1,
-        textureSize: Vector2(img.width.toDouble(), img.height / 3.0),
+        textureSize: Vector2(img.width.toDouble(), img.height / frames.toDouble()),
         stepTime: 0.12,
         loop: true,
       ),
