@@ -8,6 +8,8 @@ import 'package:flutter/services.dart';
 import '../game_constants.dart';
 import 'interfaces.dart';
 
+enum _HDir { left, right }
+
 class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCallbacks {
   final JoystickComponent joystick;
   final List<PositionComponent> targets;
@@ -28,7 +30,12 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
   Vector2 _keyboardVelocity = Vector2.zero();
   double _cooldown = 0;
   double _flashTimer = 0;
+  _HDir _lastHDir = _HDir.right;
 
+  late SpriteAnimation _animIdle;
+  late SpriteAnimation _animMoveLeft;
+  late SpriteAnimation _animMoveRight;
+  late SpriteAnimation _animMoveBottom;
   late final RectangleComponent _hitFlash;
 
   Player(
@@ -41,29 +48,21 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
 
   @override
   Future<void> onLoad() async {
+    _animIdle = await _loadAnim('lib/assets/characteres/idle_player.png');
+    _animMoveLeft = await _loadAnim('lib/assets/characteres/player_move_left.png');
+    _animMoveRight = await _loadAnim('lib/assets/characteres/player_move_right.png');
+    _animMoveBottom = await _loadAnim('lib/assets/characteres/player_move_bottom.png');
+
+    // Calcula tamanho a partir do idle (referência)
     final data = await rootBundle.load('lib/assets/characteres/idle_player.png');
     final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     final frame = await codec.getNextFrame();
     final img = frame.image;
-
-    final frameW = img.width.toDouble();
-    final frameH = img.height / 3.0;
-
-    // Mantém 48px na altura; ajusta largura proporcionalmente
     const targetHeight = 48.0;
-    final scale = targetHeight / frameH;
-    size = Vector2(frameW * scale, targetHeight);
+    final scale = targetHeight / (img.height / 3.0);
+    size = Vector2(img.width * scale, targetHeight);
 
-    animation = SpriteAnimation.fromFrameData(
-      img,
-      SpriteAnimationData.sequenced(
-        amount: 3,
-        amountPerRow: 1, // spritesheet em coluna única (3 linhas)
-        textureSize: Vector2(frameW, frameH),
-        stepTime: 0.15,
-        loop: true,
-      ),
-    );
+    animation = _animIdle;
 
     _hitFlash = RectangleComponent(
       size: size,
@@ -73,12 +72,55 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
     );
     add(_hitFlash);
 
-    // Hitbox menor que o sprite visual para colisão mais justa
     add(RectangleHitbox(
       size: Vector2(size.x * 0.5, size.y * 0.5),
       anchor: Anchor.center,
       position: size / 2,
     ));
+  }
+
+  Future<SpriteAnimation> _loadAnim(String path) async {
+    final data = await rootBundle.load(path);
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final frame = await codec.getNextFrame();
+    final img = frame.image;
+    return SpriteAnimation.fromFrameData(
+      img,
+      SpriteAnimationData.sequenced(
+        amount: 3,
+        amountPerRow: 1,
+        textureSize: Vector2(img.width.toDouble(), img.height / 3.0),
+        stepTime: 0.12,
+        loop: true,
+      ),
+    );
+  }
+
+  void _updateAnimation(Vector2 moveDir) {
+    final SpriteAnimation next;
+    if (moveDir.isZero()) {
+      next = _animIdle;
+    } else {
+      final ax = moveDir.x.abs();
+      final ay = moveDir.y.abs();
+      if (ax >= ay) {
+        if (moveDir.x < 0) {
+          _lastHDir = _HDir.left;
+          next = _animMoveLeft;
+        } else {
+          _lastHDir = _HDir.right;
+          next = _animMoveRight;
+        }
+      } else {
+        if (moveDir.y > 0) {
+          next = _animMoveBottom;
+        } else {
+          // Subindo: usa o último lado horizontal
+          next = _lastHDir == _HDir.left ? _animMoveLeft : _animMoveRight;
+        }
+      }
+    }
+    if (animation != next) animation = next;
   }
 
   void takeDamage(int amount) {
@@ -126,11 +168,18 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
       if (_flashTimer <= 0) _hitFlash.paint.color = const ui.Color(0x00E53935);
     }
 
+    Vector2 moveDir = Vector2.zero();
     if (joystick.direction != JoystickDirection.idle) {
-      position += joystick.relativeDelta * speed * dt;
+      moveDir = joystick.relativeDelta;
     } else if (_keyboardVelocity.length > 0) {
-      position += _keyboardVelocity * speed * dt;
+      moveDir = _keyboardVelocity;
     }
+
+    if (!moveDir.isZero()) {
+      position += moveDir * speed * dt;
+    }
+
+    _updateAnimation(moveDir);
 
     position.x = position.x.clamp(size.x / 2, GameConstants.mapWidth - size.x / 2);
     position.y = position.y.clamp(size.y / 2, GameConstants.mapHeight - size.y / 2);
