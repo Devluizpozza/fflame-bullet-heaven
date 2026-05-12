@@ -27,6 +27,7 @@ class HealthDrop extends SpriteComponent with CollisionCallbacks {
     final codec = await instantiateImageCodec(data.buffer.asUint8List());
     final frame = await codec.getNextFrame();
     sprite = Sprite(frame.image);
+    paint.filterQuality = FilterQuality.none;
     add(CircleHitbox(
       radius: 10,
       anchor: Anchor.center,

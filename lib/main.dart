@@ -247,9 +247,16 @@ class _MenuOverlay extends StatelessWidget {
 
 // ─── HUD ─────────────────────────────────────────────────────────────────────
 
-class _HudOverlay extends StatelessWidget {
+class _HudOverlay extends StatefulWidget {
   final MyGame game;
   const _HudOverlay({required this.game});
+
+  @override
+  State<_HudOverlay> createState() => _HudOverlayState();
+}
+
+class _HudOverlayState extends State<_HudOverlay> {
+  bool _skillsOpen = false;
 
   @override
   Widget build(BuildContext context) {
@@ -257,38 +264,123 @@ class _HudOverlay extends StatelessWidget {
       minimum: const EdgeInsets.only(top: 36),
       child: Stack(
         children: [
-          // Barra de vida do player — topo centralizado
+          // Área central do topo — barras + botão de magias
           Align(
             alignment: Alignment.topCenter,
             child: Padding(
               padding: const EdgeInsets.only(top: 10),
               child: ValueListenableBuilder<(int, int, int)>(
-                valueListenable: game.xpNotifier,
+                valueListenable: widget.game.xpNotifier,
                 builder: (_, xpTuple, __) => ValueListenableBuilder<int>(
-                  valueListenable: game.playerHpNotifier,
-                  builder: (_, hp, __) => Row(
+                  valueListenable: widget.game.playerHpNotifier,
+                  builder: (_, hp, __) => Column(
                     mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        'Lv${xpTuple.$3}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.none,
-                          shadows: [Shadow(blurRadius: 2, color: Colors.black)],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Column(
+                      // Nível + barras de HP e XP
+                      Row(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          _PlayerHpBar(hp: hp, maxHp: game.playerMaxHp),
-                          const SizedBox(height: 4),
-                          _XpBar(current: xpTuple.$1, required: xpTuple.$2),
+                          Text(
+                            'Lv${xpTuple.$3}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.none,
+                              shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _PlayerHpBar(hp: hp, maxHp: widget.game.playerMaxHp),
+                              const SizedBox(height: 4),
+                              _XpBar(current: xpTuple.$1, required: xpTuple.$2),
+                            ],
+                          ),
                         ],
                       ),
+                      const SizedBox(height: 8),
+                      // Botão Magias
+                      GestureDetector(
+                        onTap: () {
+                          setState(() => _skillsOpen = !_skillsOpen);
+                          if (_skillsOpen) {
+                            widget.game.pauseEngine();
+                          } else {
+                            widget.game.resumeEngine();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A1A2E),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
+                            boxShadow: const [
+                              BoxShadow(color: Color(0x55FFD700), blurRadius: 6),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.auto_awesome,
+                                  color: Color(0xFFFFD700), size: 14),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Magias',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.none,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _skillsOpen
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                color: Colors.white70,
+                                size: 14,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Grid de habilidades coletadas
+                      if (_skillsOpen)
+                        ValueListenableBuilder<List<(String, int)>>(
+                          valueListenable: widget.game.collectedSkillsNotifier,
+                          builder: (_, skills, __) {
+                            if (skills.isEmpty) {
+                              return const Padding(
+                                padding: EdgeInsets.only(top: 6),
+                                child: Text(
+                                  'Nenhuma magia ainda',
+                                  style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 11,
+                                    decoration: TextDecoration.none,
+                                  ),
+                                ),
+                              );
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                alignment: WrapAlignment.center,
+                                children: skills
+                                    .map((s) => _MiniSkillCard(skill: s))
+                                    .toList(),
+                              ),
+                            );
+                          },
+                        ),
                     ],
                   ),
                 ),
@@ -301,7 +393,7 @@ class _HudOverlay extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: GestureDetector(
-                onTap: game.pauseGame,
+                onTap: widget.game.pauseGame,
                 child: Container(
                   width: 52,
                   height: 52,
@@ -312,6 +404,70 @@ class _HudOverlay extends StatelessWidget {
                   child: const Icon(Icons.pause, color: Colors.black, size: 30),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniSkillCard extends StatelessWidget {
+  final (String, int) skill;
+  const _MiniSkillCard({required this.skill});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 62,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
+        boxShadow: const [
+          BoxShadow(color: Color(0x44FFD700), blurRadius: 4, spreadRadius: 0),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Badge de nível
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFD700),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
+            ),
+            child: Text(
+              'Lv ${skill.$2}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.none,
+              ),
+            ),
+          ),
+          // Ícone + nome
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.auto_awesome, color: Color(0xFFFFD700), size: 20),
+                const SizedBox(height: 3),
+                Text(
+                  skill.$1,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 9,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

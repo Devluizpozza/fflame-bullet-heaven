@@ -1,84 +1,94 @@
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:flutter/material.dart' show Color, Colors;
+import 'package:flutter/material.dart' show Color;
+import 'package:flutter/services.dart';
 
 import '../game_constants.dart';
 import 'interfaces.dart';
 
-enum EnemyShape { circle, square, triangle }
+enum _HDir { left, right }
 
-class Enemy extends PositionComponent with CollisionCallbacks, Hostile, Damageable {
+class Enemy extends SpriteAnimationComponent with CollisionCallbacks, Hostile, Damageable {
   final PositionComponent target;
   final double speed;
+  final Color color;
   final void Function(Vector2 position, Color color) onDeath;
-  final EnemyShape shape;
-  final Color _color;
-  final Paint _paint;
   final int maxHp;
   int hp;
 
-  static const double _unitSize = 32.0;
-  static final _barBgPaint = Paint()..color = const Color(0x99000000);
-  static final _barFillPaint = Paint()..color = const Color(0xFF4CAF50);
+  _HDir? _lastHDir;
+
+  static final _barBgPaint = ui.Paint()..color = const ui.Color(0x99000000);
+  static final _barFillPaint = ui.Paint()..color = const ui.Color(0xFF4CAF50);
 
   Enemy(
     this.target, {
     required this.speed,
+    required this.color,
     required this.onDeath,
-    required this.shape,
-    Color color = Colors.red,
     int initialHp = 10,
-  })  : _color = color,
-        _paint = Paint()..color = color,
-        maxHp = initialHp,
+  })  : maxHp = initialHp,
         hp = initialHp,
-        super(
-          size: Vector2.all(_unitSize),
-          anchor: Anchor.center,
-        );
+        super(anchor: Anchor.center);
 
   @override
   Future<void> onLoad() async {
-    switch (shape) {
-      case EnemyShape.circle:
-        add(CircleHitbox(radius: 16, anchor: Anchor.center, position: Vector2(16, 16)));
-      case EnemyShape.square:
-        add(RectangleHitbox(size: Vector2(28, 28), anchor: Anchor.center, position: Vector2(16, 16)));
-      case EnemyShape.triangle:
-        add(PolygonHitbox([Vector2(16, 0), Vector2(0, 32), Vector2(32, 32)]));
-    }
+    final data = await rootBundle.load(
+      'lib/assets/characteres/goblin/globlin_move_right.png',
+    );
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final frame = await codec.getNextFrame();
+    final img = frame.image;
+
+    const frames = 4;
+    const targetHeight = 48.0;
+    final frameH = img.height / frames.toDouble();
+    final s = targetHeight / frameH;
+    size = Vector2(img.width * s, targetHeight);
+
+    animation = SpriteAnimation.fromFrameData(
+      img,
+      SpriteAnimationData.sequenced(
+        amount: frames,
+        amountPerRow: 1,
+        textureSize: Vector2(img.width.toDouble(), frameH),
+        stepTime: 0.12,
+        loop: true,
+      ),
+    );
+
+    paint.filterQuality = ui.FilterQuality.none;
+
+    add(RectangleHitbox(
+      size: Vector2(size.x * 0.5, size.y * 0.5),
+      anchor: Anchor.center,
+      position: size / 2,
+    ));
   }
 
   @override
-  void render(Canvas canvas) {
-    switch (shape) {
-      case EnemyShape.circle:
-        canvas.drawCircle(const Offset(16, 16), 16, _paint);
-      case EnemyShape.square:
-        canvas.drawRect(const Rect.fromLTWH(2, 2, 28, 28), _paint);
-      case EnemyShape.triangle:
-        final path = Path()
-          ..moveTo(16, 0)
-          ..lineTo(0, 32)
-          ..lineTo(32, 32)
-          ..close();
-        canvas.drawPath(path, _paint);
-    }
+  void render(ui.Canvas canvas) {
+    super.render(canvas);
     _renderHpBar(canvas);
   }
 
-  void _renderHpBar(Canvas canvas) {
-    const barW = 30.0;
+  void _renderHpBar(ui.Canvas canvas) {
+    final barW = size.x;
     const barH = 4.0;
-    const barX = 1.0;
-    const barY = -7.0;
-    canvas.drawRect(const Rect.fromLTWH(barX, barY, barW, barH), _barBgPaint);
-    canvas.drawRect(
-      Rect.fromLTWH(barX, barY, barW * (hp / maxHp).clamp(0.0, 1.0), barH),
-      _barFillPaint,
-    );
+    const barY = -10.0;
+    final fillW = barW * (hp / maxHp).clamp(0.0, 1.0);
+
+    // Compensa espelho para que a barra sempre preencha da esquerda para direita
+    canvas.save();
+    if (scale.x < 0) {
+      canvas.scale(-1, 1);
+      canvas.translate(-size.x, 0);
+    }
+    canvas.drawRect(ui.Rect.fromLTWH(0, barY, barW, barH), _barBgPaint);
+    canvas.drawRect(ui.Rect.fromLTWH(0, barY, fillW, barH), _barFillPaint);
+    canvas.restore();
   }
 
   @override
@@ -86,7 +96,7 @@ class Enemy extends PositionComponent with CollisionCallbacks, Hostile, Damageab
     if (hp <= 0) return;
     hp -= amount;
     if (hp <= 0) {
-      onDeath(position.clone(), _color);
+      onDeath(position.clone(), color);
       removeFromParent();
     }
   }
@@ -94,13 +104,23 @@ class Enemy extends PositionComponent with CollisionCallbacks, Hostile, Damageab
   @override
   void update(double dt) {
     super.update(dt);
-    final direction = target.position - position;
-    if (direction.length > 0) {
-      direction.normalize();
-      position += direction * speed * dt;
+    final dir = target.position - position;
+    if (dir.length > 0) {
+      dir.normalize();
+      position += dir * speed * dt;
+      _updateFacing(dir);
     }
-    const half = _unitSize / 2;
-    position.x = position.x.clamp(half, GameConstants.mapWidth - half);
-    position.y = position.y.clamp(half, GameConstants.mapHeight - half);
+    position.x = position.x.clamp(size.x / 2, GameConstants.mapWidth - size.x / 2);
+    position.y = position.y.clamp(size.y / 2, GameConstants.mapHeight - size.y / 2);
+  }
+
+  void _updateFacing(Vector2 dir) {
+    final ax = dir.x.abs();
+    final ay = dir.y.abs();
+    if (ax >= ay) {
+      _lastHDir = dir.x < 0 ? _HDir.left : _HDir.right;
+    }
+    // Espelha quando vai para esquerda; sem lastHDir ainda usa sprite original
+    scale.x = _lastHDir == _HDir.left ? -1 : 1;
   }
 }

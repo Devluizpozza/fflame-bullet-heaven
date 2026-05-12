@@ -37,4 +37,5 @@ flutter:
     - lib/assets/art/
     - lib/assets/tiles/
     - lib/assets/characteres/
+    - lib/assets/characteres/goblin/
 

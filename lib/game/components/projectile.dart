@@ -49,7 +49,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks {
       ),
     );
 
-    // atan2(y, x): sprite natural aponta para direita → rotação correta para qualquer direção
+    paint.filterQuality = ui.FilterQuality.none;
     angle = math.atan2(_velocity.y, _velocity.x);
 
     add(CircleHitbox(

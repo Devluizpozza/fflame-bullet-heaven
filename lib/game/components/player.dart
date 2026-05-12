@@ -64,6 +64,7 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
     size = Vector2(img.width * s, targetHeight);
 
     animation = _animIdle;
+    paint.filterQuality = ui.FilterQuality.none;
 
     add(RectangleHitbox(
       size: Vector2(size.x * 0.5, size.y * 0.5),

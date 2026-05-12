@@ -33,6 +33,8 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   int _projectileSpeedLevel = 0;
   int _pendingLevelUps = 0;
 
+  late final ValueNotifier<List<(String, int)>> collectedSkillsNotifier;
+
   List<SkillOffer> get currentLevelUpOffers => List.generate(
         3,
         (_) => SkillOffer(
@@ -51,6 +53,7 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   @override
   Future<void> onLoad() async {
     playerHpNotifier = ValueNotifier(Player.maxHp);
+    collectedSkillsNotifier = ValueNotifier([]);
     _xpSystem = XpSystem(onLevelUp: _onLevelUp);
 
     _world = GameWorld();
@@ -109,10 +112,17 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
 
   void _applyProjectileSpeed() {
     _projectileSpeedLevel++;
-    // Reduz o cooldown em 0.05s por nível (mínimo 0.05s)
     player.cooldownDuration = (0.4 - _projectileSpeedLevel * 0.05).clamp(0.05, 0.4);
-    // A cada 3 níveis, adiciona um projétil paralelo
-    player.projectileCount = 1 + _projectileSpeedLevel ~/ 3;
+
+    final skills = [...collectedSkillsNotifier.value];
+    final idx = skills.indexWhere((s) => s.$1 == 'Velocidade de Projétil');
+    if (idx >= 0) {
+      skills[idx] = ('Velocidade de Projétil', _projectileSpeedLevel);
+    } else {
+      skills.add(('Velocidade de Projétil', _projectileSpeedLevel));
+    }
+    collectedSkillsNotifier.value = skills;
+
     _onSkillSelected();
   }
 

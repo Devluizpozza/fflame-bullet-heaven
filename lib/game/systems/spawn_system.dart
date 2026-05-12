@@ -3,9 +3,9 @@ import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Color, Colors;
 
+import '../components/bone_death.dart';
 import '../components/enemy.dart';
 import '../components/health_drop.dart';
-import '../components/puddle.dart';
 import '../components/xp_orb.dart';
 import '../game_constants.dart';
 
@@ -65,7 +65,6 @@ class SpawnSystem extends Component {
   void _spawnRandom() {
     _spawnEnemy(
       color: _colors[_random.nextInt(_colors.length)],
-      shape: EnemyShape.values[_random.nextInt(EnemyShape.values.length)],
       initialHp: 10 + _random.nextInt(21),
       speed: 50.0 + _random.nextDouble() * 100,
       position: _randomPosition(),
@@ -74,7 +73,6 @@ class SpawnSystem extends Component {
 
   void _spawnEnemy({
     required Color color,
-    required EnemyShape shape,
     required int initialHp,
     required double speed,
     required Vector2 position,
@@ -84,12 +82,11 @@ class SpawnSystem extends Component {
       playerRef,
       speed: speed,
       color: color,
-      shape: shape,
       initialHp: initialHp,
       onDeath: (pos, c) {
         enemies.remove(e);
         onKill();
-        parent!.add(Puddle(position: pos, color: c));
+        parent!.add(BoneDeath(position: pos));
         if (_random.nextInt(10) < 7) {
           parent!.add(XpOrb(
             position: pos,

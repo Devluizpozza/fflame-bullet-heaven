@@ -25,6 +25,7 @@ class TiledBackground extends PositionComponent {
     final tile = frame.image;
 
     _paint = Paint()
+      ..filterQuality = FilterQuality.none
       ..shader = ImageShader(
         tile,
         TileMode.repeated,
