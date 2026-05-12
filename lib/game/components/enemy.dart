@@ -23,12 +23,15 @@ class Enemy extends SpriteAnimationComponent with CollisionCallbacks, Hostile, D
   static final _barBgPaint = ui.Paint()..color = const ui.Color(0x99000000);
   static final _barFillPaint = ui.Paint()..color = const ui.Color(0xFF4CAF50);
 
+  final double targetHeight;
+
   Enemy(
     this.target, {
     required this.speed,
     required this.color,
     required this.onDeath,
     int initialHp = 10,
+    this.targetHeight = 48.0,
   })  : maxHp = initialHp,
         hp = initialHp,
         super(anchor: Anchor.center);
@@ -43,7 +46,6 @@ class Enemy extends SpriteAnimationComponent with CollisionCallbacks, Hostile, D
     final img = frame.image;
 
     const frames = 4;
-    const targetHeight = 48.0;
     final frameH = img.height / frames.toDouble();
     final s = targetHeight / frameH;
     size = Vector2(img.width * s, targetHeight);

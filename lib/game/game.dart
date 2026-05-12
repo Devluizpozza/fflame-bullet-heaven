@@ -26,6 +26,9 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   int killCount = 0;
 
   late final ValueNotifier<int> playerHpNotifier;
+  late final ValueNotifier<int> timerNotifier;
+  double _elapsedTime = 0;
+
   int get playerMaxHp => Player.maxHp;
   ValueNotifier<(int, int, int)> get xpNotifier => _xpSystem.notifier;
 
@@ -53,6 +56,7 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   @override
   Future<void> onLoad() async {
     playerHpNotifier = ValueNotifier(Player.maxHp);
+    timerNotifier = ValueNotifier(0);
     collectedSkillsNotifier = ValueNotifier([]);
     _xpSystem = XpSystem(onLevelUp: _onLevelUp);
 
@@ -91,6 +95,7 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
       onKill: () => killCount++,
       onXpCollect: _xpSystem.collect,
       onHealPlayer: player.heal,
+      onGrantFullLevel: _grantFullLevel,
     ));
 
     // Inicia pausado — engine só começa quando o jogador pressionar "Jogar"
@@ -100,12 +105,22 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   @override
   void update(double dt) {
     super.update(dt);
+    _elapsedTime += dt;
+    final secs = _elapsedTime.floor();
+    if (secs != timerNotifier.value) timerNotifier.value = secs;
     final halfW = size.x / 2;
     final halfH = size.y / 2;
     _cam.viewfinder.position = Vector2(
       _cam.viewfinder.position.x.clamp(halfW, GameConstants.mapWidth - halfW),
       _cam.viewfinder.position.y.clamp(halfH, GameConstants.mapHeight - halfH),
     );
+  }
+
+  // ── Boss reward ──────────────────────────────────────────────
+
+  void _grantFullLevel() {
+    final needed = _xpSystem.xpRequired - _xpSystem.currentXp;
+    _xpSystem.collect(needed > 0 ? needed : 1);
   }
 
   // ── Skill application ────────────────────────────────────────

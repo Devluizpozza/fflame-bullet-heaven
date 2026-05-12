@@ -7,9 +7,10 @@ class BoneDeath extends SpriteComponent {
   static const double _duration = 5.0;
   static const double _fadeDuration = 1.5;
 
+  final double targetHeight;
   double _timer = 0;
 
-  BoneDeath({required Vector2 position})
+  BoneDeath({required Vector2 position, this.targetHeight = 12.0})
       : super(anchor: Anchor.center, position: position);
 
   @override
@@ -20,7 +21,6 @@ class BoneDeath extends SpriteComponent {
     sprite = Sprite(frame.image);
 
     final img = frame.image;
-    const targetHeight = 12.0; // 25% do tamanho original (reduzido em 75%)
     final scale = targetHeight / img.height.toDouble();
     size = Vector2(img.width * scale, targetHeight);
 

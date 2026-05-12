@@ -269,19 +269,33 @@ class _HudOverlayState extends State<_HudOverlay> {
             alignment: Alignment.topCenter,
             child: Padding(
               padding: const EdgeInsets.only(top: 10),
-              child: ValueListenableBuilder<(int, int, int)>(
-                valueListenable: widget.game.xpNotifier,
-                builder: (_, xpTuple, __) => ValueListenableBuilder<int>(
-                  valueListenable: widget.game.playerHpNotifier,
-                  builder: (_, hp, __) => Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Nível + barras de HP e XP
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
+              child: ValueListenableBuilder<int>(
+                valueListenable: widget.game.timerNotifier,
+                builder: (_, secs, __) => ValueListenableBuilder<(int, int, int)>(
+                  valueListenable: widget.game.xpNotifier,
+                  builder: (_, xpTuple, __) => ValueListenableBuilder<int>(
+                    valueListenable: widget.game.playerHpNotifier,
+                    builder: (_, hp, __) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Timer + Nível + barras de HP e XP
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              '${(secs ~/ 60).toString().padLeft(2, '0')}:${(secs % 60).toString().padLeft(2, '0')}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.none,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                                shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
                             'Lv${xpTuple.$3}',
                             style: const TextStyle(
                               color: Colors.white,
@@ -391,6 +405,7 @@ class _HudOverlayState extends State<_HudOverlay> {
               ),
             ),
           ),
+        ),
           // Botão de pause — topo direito
           Align(
             alignment: Alignment.topRight,

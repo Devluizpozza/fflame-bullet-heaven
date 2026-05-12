@@ -15,11 +15,17 @@ class SpawnSystem extends Component {
   final void Function() onKill;
   final void Function(int) onXpCollect;
   final void Function(int) onHealPlayer;
+  final void Function() onGrantFullLevel;
 
   static const double interval = 3.0;
+  static const double bossInterval = 10.0;
   static const int countPerWave = 3;
   static const double minDistance = 300.0;
   static const int initialCount = 3;
+
+  static const double _bossTargetHeight = 144.0; // 3x player (48 * 3)
+  static const int _bossHp = 150;
+  static const double _bossSpeed = 160.0; // 80% de 200
 
   static const _colors = <Color>[
     Colors.red,
@@ -34,6 +40,7 @@ class SpawnSystem extends Component {
 
   final _random = Random();
   double _timer = 0;
+  double _bossTimer = 0;
 
   SpawnSystem({
     required this.playerRef,
@@ -41,6 +48,7 @@ class SpawnSystem extends Component {
     required this.onKill,
     required this.onXpCollect,
     required this.onHealPlayer,
+    required this.onGrantFullLevel,
   });
 
   @override
@@ -60,6 +68,12 @@ class SpawnSystem extends Component {
         _spawnRandom();
       }
     }
+
+    _bossTimer += dt;
+    if (_bossTimer >= bossInterval) {
+      _bossTimer -= bossInterval;
+      _spawnGiant();
+    }
   }
 
   void _spawnRandom() {
@@ -69,6 +83,50 @@ class SpawnSystem extends Component {
       speed: 50.0 + _random.nextDouble() * 100,
       position: _randomPosition(),
     );
+  }
+
+  void _spawnGiant() {
+    late final Enemy e;
+    e = Enemy(
+      playerRef,
+      speed: _bossSpeed,
+      color: const Color(0xFFFFD700),
+      initialHp: _bossHp,
+      targetHeight: _bossTargetHeight,
+      onDeath: (pos, _) {
+        enemies.remove(e);
+        onKill();
+
+        // 1 vida garantida
+        parent!.add(HealthDrop(
+          position: pos,
+          target: playerRef,
+          onCollect: () => onHealPlayer(4),
+        ));
+
+        // 5 orbs de 100 XP cada
+        for (int i = 0; i < 5; i++) {
+          final offset = Vector2(
+            (_random.nextDouble() - 0.5) * 60,
+            (_random.nextDouble() - 0.5) * 60,
+          );
+          parent!.add(XpOrb(
+            position: pos + offset,
+            target: playerRef,
+            xpValue: 100,
+            color: const Color(0xFFFFD700),
+            onCollect: onXpCollect,
+          ));
+        }
+
+        // 1 nível completo
+        onGrantFullLevel();
+
+        parent!.add(BoneDeath(position: pos, targetHeight: _bossTargetHeight * 0.25));
+      },
+    )..position = _randomPosition();
+    enemies.add(e);
+    parent!.add(e);
   }
 
   void _spawnEnemy({
