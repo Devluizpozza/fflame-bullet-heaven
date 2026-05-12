@@ -35,7 +35,6 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
   late SpriteAnimation _animIdle;
   late SpriteAnimation _animMoveLeft;
   late SpriteAnimation _animMoveRight;
-  late SpriteAnimation _animMoveBottom;
   late final RectangleComponent _hitFlash;
 
   Player(
@@ -51,7 +50,6 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
     _animIdle = await _loadAnim('lib/assets/characteres/idle_player.png', 3);
     _animMoveLeft = await _loadAnim('lib/assets/characteres/player_move_left.png', 4);
     _animMoveRight = await _loadAnim('lib/assets/characteres/player_move_right.png', 4);
-    _animMoveBottom = await _loadAnim('lib/assets/characteres/player_move_bottom.png', 2);
 
     // Calcula tamanho a partir do idle (referência)
     final data = await rootBundle.load('lib/assets/characteres/idle_player.png');
@@ -104,21 +102,11 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
       final ax = moveDir.x.abs();
       final ay = moveDir.y.abs();
       if (ax >= ay) {
-        if (moveDir.x < 0) {
-          _lastHDir = _HDir.left;
-          next = _animMoveLeft;
-        } else {
-          _lastHDir = _HDir.right;
-          next = _animMoveRight;
-        }
-      } else {
-        if (moveDir.y > 0) {
-          next = _animMoveBottom;
-        } else {
-          // Subindo: usa o último lado horizontal
-          next = _lastHDir == _HDir.left ? _animMoveLeft : _animMoveRight;
-        }
+        // Movimento horizontal dominante — atualiza último lado
+        _lastHDir = moveDir.x < 0 ? _HDir.left : _HDir.right;
       }
+      // Qualquer direção (horizontal, vertical cima ou baixo) usa o último lado horizontal
+      next = _lastHDir == _HDir.left ? _animMoveLeft : _animMoveRight;
     }
     if (animation != next) animation = next;
   }
@@ -170,7 +158,9 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
 
     Vector2 moveDir = Vector2.zero();
     if (joystick.direction != JoystickDirection.idle) {
-      moveDir = joystick.relativeDelta;
+      final delta = joystick.relativeDelta;
+      // Dead zone: ignora deltas minúsculos do snap-back do joystick
+      if (delta.length > 0.15) moveDir = delta;
     } else if (_keyboardVelocity.length > 0) {
       moveDir = _keyboardVelocity;
     }

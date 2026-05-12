@@ -33,8 +33,8 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks {
     final frameW = img.width / frames.toDouble();
     final frameH = img.height.toDouble();
 
-    // Mantém proporção do frame; altura base = _radius * 2
-    final scale = (_radius * 2) / frameH;
+    // Mantém proporção do frame; +50% em relação ao radius base
+    final scale = (_radius * 3) / frameH;
     size = Vector2(frameW * scale, frameH * scale);
 
     animation = SpriteAnimation.fromFrameData(
