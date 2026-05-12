@@ -355,29 +355,33 @@ class _HudOverlayState extends State<_HudOverlay> {
                         ValueListenableBuilder<List<(String, int)>>(
                           valueListenable: widget.game.collectedSkillsNotifier,
                           builder: (_, skills, __) {
-                            if (skills.isEmpty) {
-                              return const Padding(
-                                padding: EdgeInsets.only(top: 6),
-                                child: Text(
-                                  'Nenhuma magia ainda',
-                                  style: TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 11,
-                                    decoration: TextDecoration.none,
-                                  ),
-                                ),
-                              );
-                            }
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                alignment: WrapAlignment.center,
-                                children: skills
-                                    .map((s) => _MiniSkillCard(skill: s))
-                                    .toList(),
+                            return Container(
+                              margin: const EdgeInsets.only(top: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0x22FFFFFF),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color: const Color(0x33FFFFFF), width: 1),
                               ),
+                              child: skills.isEmpty
+                                  ? const Text(
+                                      'Nenhuma magia ainda',
+                                      style: TextStyle(
+                                        color: Colors.white38,
+                                        fontSize: 11,
+                                        decoration: TextDecoration.none,
+                                      ),
+                                    )
+                                  : Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      alignment: WrapAlignment.center,
+                                      children: skills
+                                          .map((s) => _MiniSkillCard(skill: s))
+                                          .toList(),
+                                    ),
                             );
                           },
                         ),

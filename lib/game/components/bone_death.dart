@@ -20,7 +20,7 @@ class BoneDeath extends SpriteComponent {
     sprite = Sprite(frame.image);
 
     final img = frame.image;
-    const targetHeight = 48.0;
+    const targetHeight = 12.0; // 25% do tamanho original (reduzido em 75%)
     final scale = targetHeight / img.height.toDouble();
     size = Vector2(img.width * scale, targetHeight);
 
