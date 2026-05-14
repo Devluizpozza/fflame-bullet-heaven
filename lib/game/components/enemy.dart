@@ -10,7 +10,8 @@ import 'interfaces.dart';
 
 enum _HDir { left, right }
 
-class Enemy extends SpriteAnimationComponent with CollisionCallbacks, Hostile, Damageable {
+abstract class Enemy extends SpriteAnimationComponent
+    with CollisionCallbacks, Hostile, Damageable {
   final PositionComponent target;
   final double speed;
   final Color color;
@@ -18,11 +19,17 @@ class Enemy extends SpriteAnimationComponent with CollisionCallbacks, Hostile, D
   final int maxHp;
   int hp;
 
+  // Proporção da hitbox em relação ao tamanho visual (0.5 = 50%)
+  double get hitboxRatio => 0.5;
+
   _HDir? _lastHDir;
 
   static final _barBgPaint = ui.Paint()..color = const ui.Color(0x99000000);
   static final _barFillPaint = ui.Paint()..color = const ui.Color(0xFF4CAF50);
 
+  // Subclasses definem a arte e a quantidade de frames
+  String get spritePath;
+  int get framesCount;
   final double targetHeight;
 
   Enemy(
@@ -31,29 +38,26 @@ class Enemy extends SpriteAnimationComponent with CollisionCallbacks, Hostile, D
     required this.color,
     required this.onDeath,
     int initialHp = 10,
-    this.targetHeight = 48.0,
+    required this.targetHeight,
   })  : maxHp = initialHp,
         hp = initialHp,
         super(anchor: Anchor.center);
 
   @override
   Future<void> onLoad() async {
-    final data = await rootBundle.load(
-      'lib/assets/characteres/goblin/globlin_move_right.png',
-    );
+    final data = await rootBundle.load(spritePath);
     final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     final frame = await codec.getNextFrame();
     final img = frame.image;
 
-    const frames = 4;
-    final frameH = img.height / frames.toDouble();
+    final frameH = img.height / framesCount.toDouble();
     final s = targetHeight / frameH;
     size = Vector2(img.width * s, targetHeight);
 
     animation = SpriteAnimation.fromFrameData(
       img,
       SpriteAnimationData.sequenced(
-        amount: frames,
+        amount: framesCount,
         amountPerRow: 1,
         textureSize: Vector2(img.width.toDouble(), frameH),
         stepTime: 0.12,
@@ -64,7 +68,7 @@ class Enemy extends SpriteAnimationComponent with CollisionCallbacks, Hostile, D
     paint.filterQuality = ui.FilterQuality.none;
 
     add(RectangleHitbox(
-      size: Vector2(size.x * 0.5, size.y * 0.5),
+      size: Vector2(size.x * hitboxRatio, size.y * hitboxRatio),
       anchor: Anchor.center,
       position: size / 2,
     ));
@@ -82,7 +86,6 @@ class Enemy extends SpriteAnimationComponent with CollisionCallbacks, Hostile, D
     const barY = -10.0;
     final fillW = barW * (hp / maxHp).clamp(0.0, 1.0);
 
-    // Compensa espelho para que a barra sempre preencha da esquerda para direita
     canvas.save();
     if (scale.x < 0) {
       canvas.scale(-1, 1);
@@ -122,7 +125,6 @@ class Enemy extends SpriteAnimationComponent with CollisionCallbacks, Hostile, D
     if (ax >= ay) {
       _lastHDir = dir.x < 0 ? _HDir.left : _HDir.right;
     }
-    // Espelha quando vai para esquerda; sem lastHDir ainda usa sprite original
     scale.x = _lastHDir == _HDir.left ? -1 : 1;
   }
 }

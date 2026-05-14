@@ -5,6 +5,7 @@ import 'package:flutter/material.dart' show Color, Colors;
 
 import '../components/bone_death.dart';
 import '../components/enemy.dart';
+import '../components/enemies/goblin_enemy.dart';
 import '../components/health_drop.dart';
 import '../components/xp_orb.dart';
 import '../game_constants.dart';
@@ -23,9 +24,9 @@ class SpawnSystem extends Component {
   static const double minDistance = 300.0;
   static const int initialCount = 3;
 
-  static const double _bossTargetHeight = 144.0; // 3x player (48 * 3)
+  static const double _bossTargetHeight = GoblinEnemy.defaultHeight * 3; // 144
   static const int _bossHp = 150;
-  static const double _bossSpeed = 160.0; // 80% de 200
+  static const double _bossSpeed = 160.0;
 
   static const _colors = <Color>[
     Colors.red,
@@ -87,7 +88,7 @@ class SpawnSystem extends Component {
 
   void _spawnGiant() {
     late final Enemy e;
-    e = Enemy(
+    e = GoblinEnemy(
       playerRef,
       speed: _bossSpeed,
       color: const Color(0xFFFFD700),
@@ -97,14 +98,12 @@ class SpawnSystem extends Component {
         enemies.remove(e);
         onKill();
 
-        // 1 vida garantida
         parent!.add(HealthDrop(
           position: pos,
           target: playerRef,
           onCollect: () => onHealPlayer(4),
         ));
 
-        // 5 orbs de 100 XP cada
         for (int i = 0; i < 5; i++) {
           final offset = Vector2(
             (_random.nextDouble() - 0.5) * 60,
@@ -119,7 +118,6 @@ class SpawnSystem extends Component {
           ));
         }
 
-        // 1 nível completo
         onGrantFullLevel();
 
         parent!.add(BoneDeath(position: pos, targetHeight: _bossTargetHeight * 0.25));
@@ -136,7 +134,7 @@ class SpawnSystem extends Component {
     required Vector2 position,
   }) {
     late final Enemy e;
-    e = Enemy(
+    e = GoblinEnemy(
       playerRef,
       speed: speed,
       color: color,

@@ -2,31 +2,28 @@
 
 > *"Entre o caos e a ordem, sobreviver não é certeza — é contradição."*
 
-**Aporia Survivors** é um roguelike minimalista e frenético inspirado em jogos como Vampire Survivors, mesclando temas filosóficos com mecânicas de sobrevivência.
+**Aporia Heaven** é um roguelike minimalista e frenético inspirado em jogos como Vampire Survivors, mesclando temas filosóficos com mecânicas de sobrevivência.
 Cada run é um confronto entre entropia e controle — onde o jogador evolui, se adapta e inevitavelmente cai.
 
 ---
 
-# 🎮 Visão Geral
+## 🎮 Visão Geral
 
-Aporia Survivors é um **roguelike de sobrevivência 2D top-down** construído com:
+Aporia Heaven é um **roguelike de sobrevivência 2D top-down** construído com:
 
 * Flutter
 * Flame
-* Isar
 
 O loop central de gameplay gira em torno de:
 
 * Sobreviver a ondas de inimigos cada vez mais difíceis
 * Coletar experiência e evoluir o personagem
 * Subir de nível e escolher melhorias
-* Desbloquear progressão permanente
-
-Cada run dura até **~20 minutos**, escalando em intensidade ao longo do tempo.
+* Resistir o maior tempo possível
 
 ---
 
-# 🧠 Conceito Central
+## 🧠 Conceito Central
 
 Inspirado na ideia filosófica de **aporia** (um estado de perplexidade ou impasse), o jogo explora:
 
@@ -36,170 +33,174 @@ Inspirado na ideia filosófica de **aporia** (um estado de perplexidade ou impas
 
 Mecanicamente, isso se traduz em:
 
-* Dificuldade com escala infinita
+* Dificuldade com escala crescente
 * Builds emergentes
 * Cenários de sobrevivência imprevisíveis
 
 ---
 
-# ⚙️ Implementação Atual (Protótipo)
+## ⚙️ Implementação Atual (Protótipo)
 
-A versão atual é um **protótipo inicial de gameplay**, focado em validar o loop central.
+A versão atual é um **protótipo de gameplay**, focado em validar o loop central.
 
 ### ✅ Funcionalidades Implementadas
 
-* Loop de jogo funcional com Flame
-* Movimento do jogador (WASD / Teclas de direção / Joystick virtual)
-* IA de inimigos (comportamento de perseguição simples)
-* Câmera seguindo o jogador com limites de mapa
-* Mapa procedural baseado em grid (sistema tipo tile)
-* Sistema de spawn de inimigos em ondas (3 iniciais + 3 a cada 3 segundos)
-* Inimigos com cores e formas variadas (retângulo, círculo, triângulo)
-* Sistema de colisão (jogador vs inimigos, projéteis vs inimigos)
-* Sistema de vida do jogador com barra de HP no HUD
-* Auto-ataque: projéteis disparados automaticamente ao inimigo mais próximo
-* Suporte a múltiplos projéteis paralelos (desbloqueado ao evoluir)
+**Personagem**
+* Sprite animado com pixel art (idle, movimento direita, esquerda, baixo)
+* Espelhamento automático de sprite ao mover para a esquerda
+* Movimento via joystick virtual (mobile) e teclado (WASD / setas)
+* Sistema de vida com barra de HP colorida no HUD
+* Flash de dano (tint vermelho sobre o sprite, sem retângulo genérico)
+* Auto-ataque: projétil de chama disparado automaticamente ao inimigo mais próximo
+
+**Inimigos**
+* Arquitetura de inimigos baseada em herança — `Enemy` abstrato + subclasses (`GoblinEnemy`)
+* Inimigos com sprite animado de goblin, espelhamento por direção
+* Barra de HP individual sobre cada inimigo (compensada para não inverter com o espelho)
+* IA de perseguição simples com limite de mapa
+* **Mini-boss goblin gigante** (3× o tamanho do jogador): spawn a cada 10 segundos, 150 HP, 80% da velocidade do jogador
+
+**Projéteis**
+* Sprite animado de chama (4 frames)
+* Rotação correta alinhada à direção do disparo
 * Detecção contínua de colisão (CCD) via raycast para evitar tunneling
-* Sistema de XP com barra de progresso e levelup
-* Poças de sangue ao matar inimigos
-* Orbs de XP dropados pelos inimigos (70% de chance)
+
+**Sistema de XP e Level-up**
+* Orbs de XP com 3 tiers visuais: azul diamante (≤20 XP), roxo círculo (≤30 XP), laranja com anel (>30 XP)
 * Drop de vida (coração) com 10% de chance — recupera 4 HP
 * Tela de seleção de habilidade ao subir de nível (3 cartas)
-* Habilidade: **Velocidade de Projétil** — reduz cooldown e adiciona projéteis a cada 3 níveis
-* HUD com nível, barra de HP e barra de XP
-* Tela de menu, pause, game over e levelup
-* Jogo inicia pausado — motor só começa quando o jogador pressiona "Jogar"
-* Saída do jogo pausa corretamente o motor antes de reiniciar
+* Habilidade disponível: **Velocidade de Projétil** — reduz o cooldown de ataque progressivamente
+* Drops especiais do mini-boss: 1 vida garantida + 5 orbs de 100 XP + 1 nível completo instantâneo
+
+**Morte de inimigos**
+* Sprite `bone_death` ao morrer (tamanho proporcional ao inimigo — mini-boss deixa ossada maior)
+* Fade out suave em 1.5s, removido após 5s
+
+**HUD**
+* Contador de tempo em MM:SS (fonte de largura fixa)
+* Nível atual, barra de HP e barra de XP
+* Painel "Magias" expansível: lista as habilidades coletadas com nível — pausa o jogo ao abrir
+* Botão de pause no canto superior direito
+
+**Fluxo de jogo**
+* Telas: Menu, HUD, Pause, Game Over, Level-up
+* Jogo inicia pausado — motor só começa ao pressionar "Jogar"
+* Saída pausa corretamente o motor antes de reiniciar
+
+**Técnico**
+* `FilterQuality.none` em todos os sprites para renderização pixel-perfect
+* Mapa com fundo em tileset e câmera com limites
+* Sistema de spawn em ondas (3 iniciais + 3 a cada 3 segundos)
 
 ---
 
-# 🚧 Roadmap
+## 🚧 Roadmap
 
-## Fase 1 — Gameplay Central ✅ (em andamento)
+### Fase 1 — Gameplay Central ✅ (em andamento)
 
-* [x] Sistema de colisão (jogador vs inimigos)
+* [x] Sistema de colisão (jogador vs inimigos, projéteis vs inimigos)
 * [x] Sistema de vida
-* [x] Mecânicas de auto-ataque
-* [x] Sistema de experiência (XP)
-* [x] Level-up com seleção de melhoria
-* [ ] Mais habilidades e variações de builds
+* [x] Auto-ataque com projéteis animados
+* [x] Sistema de XP e level-up
+* [x] Sprites animados para jogador, inimigos e projéteis
+* [x] Mini-boss com drops especiais
+* [x] Contador de tempo no HUD
+* [x] Arquitetura de inimigos extensível (herança)
+* [ ] Mais tipos de inimigos
+* [ ] Mais habilidades e variações de build
 * [ ] Escala de dificuldade ao longo do tempo
 
-## Fase 2 — Progressão
+### Fase 2 — Progressão
 
 * [ ] Meta progressão (ouro, desbloqueios)
 * [ ] Sistema de habilidades orientado a dados
 * [ ] Sistema de equipamentos
-* [ ] Sistema de save usando Isar
+* [ ] Sistema de save
 
-## Fase 3 — Mundo & Conteúdo
+### Fase 3 — Mundo & Conteúdo
 
 * [ ] Integração real de tilemaps (via Tiled)
 * [ ] Múltiplos mapas / biomas
-* [ ] Variedade de inimigos e comportamentos
-* [ ] Encontros com chefões (boss)
+* [ ] Variedade de inimigos e comportamentos únicos
+* [ ] Encontros com chefões (boss stage)
 
-## Fase 4 — Polimento & UX
+### Fase 4 — Polimento & UX
 
-* [ ] Efeitos visuais (partículas, feedback)
+* [ ] Efeitos visuais (partículas, flash de impacto)
 * [ ] Som e música
-* [ ] Melhorias de UI/UX (menus, HUD)
+* [ ] Melhorias de UI/UX
 * [ ] Otimização de performance (object pooling, particionamento espacial)
 
-## Fase 5 — Funcionalidades Online (Opcional)
+### Fase 5 — Funcionalidades Online (Opcional)
 
-* [ ] Cloud save (via Firebase)
+* [ ] Cloud save
 * [ ] Placar de líderes
 * [ ] Analytics e relatório de erros
 
 ---
 
-# 🏗️ Arquitetura
+## 🏗️ Arquitetura
 
-O projeto segue uma **estrutura modular e escalável**, inspirada nos princípios de ECS (Entity Component System):
+O projeto segue uma **estrutura modular**, inspirada nos princípios de ECS (Entity Component System):
 
 ```txt
 lib/
   game/
-    components/       # Entidades: Player, Enemy, Projectile, XpOrb, HealthDrop, Puddle
-    systems/          # Lógica: SpawnSystem, XpSystem
-    skills/           # Dados de habilidades: SkillOffer
-    world/            # Mundo: GameWorld (HasCollisionDetection), TiledBackground
+    components/
+      enemies/        # Subclasses de Enemy: GoblinEnemy, ...
+      enemy.dart      # Classe abstrata base com lógica compartilhada
+      player.dart
+      projectile.dart
+      xp_orb.dart
+      health_drop.dart
+      bone_death.dart
+    systems/          # SpawnSystem, XpSystem
+    skills/           # SkillOffer
+    world/            # GameWorld, TiledBackground
     game.dart         # Orquestrador principal (MyGame)
     game_constants.dart
   assets/
-    art/              # Sprites (ex: hearth_life.png)
-  main.dart           # App Flutter, overlays de UI (Menu, HUD, Pause, GameOver, LevelUp)
+    art/              # Sprites de projéteis e itens
+    tiles/            # Tileset do mapa
+    characteres/
+      goblin/         # Sprites do goblin e bone_death
+  main.dart           # App Flutter, overlays de UI
 ```
 
 ### Decisões de Design
 
 * Lógica de gameplay desacoplada da UI via callbacks e `ValueNotifier`
-* Interfaces `Hostile` e `Damageable` como mixins — evitam acoplamento direto entre entidades
+* Mixins `Hostile` e `Damageable` — evitam acoplamento direto entre entidades
+* `Enemy` abstrato com getters `spritePath` e `framesCount` — adicionar novo inimigo = novo arquivo com ~15 linhas
 * `SpawnSystem` como `Component` no mundo — gerencia spawn e drops de forma autônoma
 * `XpSystem` como classe Dart pura com callback `onLevelUp`
-* Persistência offline com Isar (planejado)
-* Sistemas orientados a dados (habilidades, inimigos, itens)
 
 ---
 
-# 💾 Estratégia de Persistência
+## ▶️ Como Começar
 
-* **Armazenamento local** usando Isar
-* Sincronização opcional na nuvem via Firebase
-
-Isso garante:
-
-* Gameplay offline
-* Acesso rápido ao estado
-* Sistema de progressão escalável
-
----
-
-# 🎨 Direção de Arte (Planejado)
-
-* Pixel art (grade base 32x32)
-* Mapas baseados em tilesets consistentes
-* Sprite sheets para animações
-* Estilo visual minimalista e legível
-
-Assets iniciais serão obtidos de:
-
-* Kenney
-* OpenGameArt
-
----
-
-# ▶️ Como Começar
-
-## Requisitos
+### Requisitos
 
 * Flutter SDK (>= 3.3)
 * Dart SDK
 * Android Studio ou VS Code
 * Emulador Android ou dispositivo físico
 
----
-
-## 📦 Instalação
+### Instalação
 
 ```bash
-git clone https://github.com/your-username/aporia-survivors.git
-cd aporia-survivors
+git clone https://github.com/your-username/aporia-heaven.git
+cd aporia-heaven
 flutter pub get
 ```
 
----
-
-## ▶️ Rodando o Jogo
+### Rodando o jogo
 
 ```bash
 flutter run
 ```
 
----
-
-## 🧹 Em caso de problemas
+### Em caso de problemas
 
 ```bash
 flutter clean
@@ -208,16 +209,16 @@ flutter pub get
 
 ---
 
-# 📱 Plataforma
+## 📱 Plataforma
 
 * Android (alvo principal)
 * iOS (planejado)
 
 ---
 
-# 🚀 Visão
+## 🚀 Visão
 
-Aporia Survivors tem como objetivo ser:
+Aporia Heaven tem como objetivo ser:
 
 * Mecanicamente profundo, porém simples de jogar
 * Altamente rejogável
@@ -226,26 +227,7 @@ Aporia Survivors tem como objetivo ser:
 
 ---
 
-# 🤝 Contribuindo
-
-Contribuições, ideias e feedbacks são bem-vindos.
-
-Sinta-se à vontade para abrir:
-
-* Issues
-* Pull requests
-* Discussions
-
----
-
-# 📜 Licença
-
-Este projeto está em desenvolvimento.
-A licença será definida em iterações futuras.
-
----
-
-# 🧩 Nota Final
+## 🧩 Nota Final
 
 > "O jogador não vence.
 > O sistema simplesmente permite que ele dure mais."
@@ -258,31 +240,28 @@ A licença será definida em iterações futuras.
 
 > *"Between chaos and order, survival is not certainty — it is contradiction."*
 
-**Aporia Survivors** is a minimalist, fast-paced roguelike inspired by games like Vampire Survivors, blending philosophical themes with survival mechanics.
+**Aporia Heaven** is a minimalist, fast-paced roguelike inspired by games like Vampire Survivors, blending philosophical themes with survival mechanics.
 Each run is a confrontation between entropy and control — where the player evolves, adapts, and inevitably falls.
 
 ---
 
-# 🎮 Overview
+## 🎮 Overview
 
-Aporia Survivors is a **2D top-down survival roguelike** built with:
+Aporia Heaven is a **2D top-down survival roguelike** built with:
 
 * Flutter
 * Flame
-* Isar
 
 The core gameplay loop revolves around:
 
 * Surviving increasingly difficult enemy waves
 * Collecting experience and leveling up
 * Choosing upgrades on level-up
-* Unlocking permanent progression
-
-Each run lasts up to **~20 minutes**, scaling in intensity over time.
+* Lasting as long as possible
 
 ---
 
-# 🧠 Core Concept
+## 🧠 Core Concept
 
 Inspired by the philosophical idea of **aporia** (a state of puzzlement or impasse), the game explores:
 
@@ -292,170 +271,174 @@ Inspired by the philosophical idea of **aporia** (a state of puzzlement or impas
 
 Mechanically, this translates into:
 
-* Infinite scaling difficulty
+* Scaling difficulty
 * Emergent builds
 * Unpredictable survival scenarios
 
 ---
 
-# ⚙️ Current Implementation (Prototype)
+## ⚙️ Current Implementation (Prototype)
 
-The current version is an **early gameplay prototype**, focused on validating the core loop.
+The current version is a **gameplay prototype**, focused on validating the core loop.
 
 ### ✅ Implemented Features
 
-* Functional game loop using Flame
-* Player movement (WASD / Arrow keys / Virtual joystick)
-* Enemy AI (simple follow behavior)
-* Camera following player with map bounds
-* Procedural grid-based map (tile-like system)
-* Enemy wave spawning (3 initial + 3 every 3 seconds)
-* Enemies with varied colors and shapes (rectangle, circle, triangle)
-* Collision system (player vs enemies, projectiles vs enemies)
-* Player health system with HP bar in HUD
-* Auto-attack: projectiles fired automatically at nearest enemy
-* Multi-projectile spread support (unlocked on level-up)
+**Player**
+* Animated pixel art sprite (idle, right, left, down movement)
+* Automatic sprite mirroring when moving left
+* Movement via virtual joystick (mobile) and keyboard (WASD / arrow keys)
+* Health system with color-coded HP bar in HUD
+* Damage flash (red tint over sprite, no generic rectangle)
+* Auto-attack: flame projectile fired automatically at the nearest enemy
+
+**Enemies**
+* Inheritance-based enemy architecture — abstract `Enemy` base + subclasses (`GoblinEnemy`)
+* Animated goblin sprite with directional mirroring
+* Individual HP bar per enemy (mirror-compensated to always fill left-to-right)
+* Simple follow AI with map boundary clamping
+* **Giant goblin mini-boss** (3× player size): spawns every 10 seconds, 150 HP, 80% of player speed
+
+**Projectiles**
+* Animated flame sprite (4 frames)
+* Correct rotation aligned to fire direction
 * Continuous collision detection (CCD) via raycast to prevent tunneling
-* XP system with progress bar and level-up
-* Blood puddles on enemy death
-* XP orbs dropped by enemies (70% chance)
+
+**XP & Level-up System**
+* XP orbs with 3 visual tiers: blue diamond (≤20 XP), purple circle (≤30 XP), orange with ring (>30 XP)
 * Health drop (heart) with 10% chance — restores 4 HP
 * Skill selection screen on level-up (3 cards)
-* Skill: **Projectile Speed** — reduces cooldown and adds projectiles every 3 levels
-* HUD with level, HP bar and XP bar
-* Menu, pause, game over and level-up screens
+* Available skill: **Projectile Speed** — progressively reduces attack cooldown
+* Mini-boss special drops: 1 guaranteed health + 5 × 100 XP orbs + 1 instant full level
+
+**Enemy Death**
+* `bone_death` sprite on death (size proportional to enemy — mini-boss leaves a bigger pile)
+* Smooth fade out over 1.5s, removed after 5s
+
+**HUD**
+* MM:SS game timer (tabular/fixed-width font)
+* Current level, HP bar and XP bar
+* Expandable "Magias" (Spells) panel: lists collected skills with level — pauses the game when open
+* Pause button in top-right corner
+
+**Game Flow**
+* Screens: Menu, HUD, Pause, Game Over, Level-up
 * Game starts paused — engine only begins when player presses "Play"
-* Quitting properly pauses the engine before restarting
+* Quit properly pauses the engine before restarting
+
+**Technical**
+* `FilterQuality.none` on all sprites for pixel-perfect rendering
+* Tileset background map with camera bounds
+* Wave-based spawn system (3 initial + 3 every 3 seconds)
 
 ---
 
-# 🚧 Roadmap
+## 🚧 Roadmap
 
-## Phase 1 — Core Gameplay ✅ (in progress)
+### Phase 1 — Core Gameplay ✅ (in progress)
 
-* [x] Collision system (player vs enemies)
+* [x] Collision system (player vs enemies, projectiles vs enemies)
 * [x] Health system
-* [x] Auto-attack mechanics
-* [x] Experience (XP) system
-* [x] Level-up with upgrade selection
+* [x] Auto-attack with animated projectiles
+* [x] XP and level-up system
+* [x] Animated sprites for player, enemies, and projectiles
+* [x] Mini-boss with special drops
+* [x] Game timer in HUD
+* [x] Extensible enemy architecture (inheritance)
+* [ ] More enemy types
 * [ ] More skills and build variations
 * [ ] Difficulty scaling over time
 
-## Phase 2 — Progression
+### Phase 2 — Progression
 
 * [ ] Meta progression (gold, unlocks)
-* [ ] Skills and abilities system (data-driven)
+* [ ] Data-driven skills and abilities
 * [ ] Equipment system
-* [ ] Save system using Isar
+* [ ] Save system
 
-## Phase 3 — World & Content
+### Phase 3 — World & Content
 
-* [ ] Real tilemaps integration (via Tiled)
+* [ ] Real tilemap integration (via Tiled)
 * [ ] Multiple maps / biomes
-* [ ] Enemy variety and behaviors
-* [ ] Boss encounters
+* [ ] Enemy variety with unique behaviors
+* [ ] Boss stage encounters
 
-## Phase 4 — Polish & UX
+### Phase 4 — Polish & UX
 
-* [ ] Visual effects (particles, feedback)
+* [ ] Visual effects (particles, hit impact)
 * [ ] Sound and music
-* [ ] UI/UX improvements (menus, HUD)
+* [ ] UI/UX improvements
 * [ ] Performance optimization (object pooling, spatial partitioning)
 
-## Phase 5 — Online Features (Optional)
+### Phase 5 — Online Features (Optional)
 
-* [ ] Cloud save (via Firebase)
+* [ ] Cloud save
 * [ ] Leaderboards
 * [ ] Analytics and crash reporting
 
 ---
 
-# 🏗️ Architecture
+## 🏗️ Architecture
 
-The project follows a **modular and scalable structure**, inspired by ECS (Entity Component System) principles:
+The project follows a **modular structure** inspired by ECS (Entity Component System) principles:
 
 ```txt
 lib/
   game/
-    components/       # Entities: Player, Enemy, Projectile, XpOrb, HealthDrop, Puddle
-    systems/          # Logic: SpawnSystem, XpSystem
-    skills/           # Skill data: SkillOffer
-    world/            # World: GameWorld (HasCollisionDetection), TiledBackground
+    components/
+      enemies/        # Enemy subclasses: GoblinEnemy, ...
+      enemy.dart      # Abstract base class with shared logic
+      player.dart
+      projectile.dart
+      xp_orb.dart
+      health_drop.dart
+      bone_death.dart
+    systems/          # SpawnSystem, XpSystem
+    skills/           # SkillOffer
+    world/            # GameWorld, TiledBackground
     game.dart         # Main orchestrator (MyGame)
     game_constants.dart
   assets/
-    art/              # Sprites (e.g. hearth_life.png)
-  main.dart           # Flutter app, UI overlays (Menu, HUD, Pause, GameOver, LevelUp)
+    art/              # Projectile and item sprites
+    tiles/            # Map tileset
+    characteres/
+      goblin/         # Goblin sprites and bone_death
+  main.dart           # Flutter app, UI overlays
 ```
 
 ### Key Design Decisions
 
 * Gameplay logic decoupled from UI via callbacks and `ValueNotifier`
-* `Hostile` and `Damageable` as mixins — avoids direct coupling between entities
+* `Hostile` and `Damageable` mixins — avoids direct coupling between entities
+* Abstract `Enemy` with `spritePath` and `framesCount` getters — adding a new enemy type = one new file, ~15 lines
 * `SpawnSystem` as a `Component` in the world — autonomously manages spawning and drops
-* `XpSystem` as a plain Dart class with `onLevelUp` callback
-* Offline-first persistence with Isar (planned)
-* Data-driven systems (skills, enemies, items)
+* `XpSystem` as a plain Dart class with an `onLevelUp` callback
 
 ---
 
-# 💾 Persistence Strategy
+## ▶️ Getting Started
 
-* **Local-first storage** using Isar
-* Optional cloud sync using Firebase
-
-This ensures:
-
-* Offline gameplay
-* Fast state access
-* Scalable progression system
-
----
-
-# 🎨 Art Direction (Planned)
-
-* Pixel art (32x32 base grid)
-* Consistent tileset-based maps
-* Sprite sheets for animations
-* Minimalist but readable visual style
-
-Initial assets will be sourced from:
-
-* Kenney
-* OpenGameArt
-
----
-
-# ▶️ Getting Started
-
-## Requirements
+### Requirements
 
 * Flutter SDK (>= 3.3)
 * Dart SDK
 * Android Studio or VS Code
 * Android Emulator or physical device
 
----
-
-## 📦 Installation
+### Installation
 
 ```bash
-git clone https://github.com/your-username/aporia-survivors.git
-cd aporia-survivors
+git clone https://github.com/your-username/aporia-heaven.git
+cd aporia-heaven
 flutter pub get
 ```
 
----
-
-## ▶️ Running the Game
+### Running the Game
 
 ```bash
 flutter run
 ```
 
----
-
-## 🧹 If you encounter issues
+### If you encounter issues
 
 ```bash
 flutter clean
@@ -464,16 +447,16 @@ flutter pub get
 
 ---
 
-# 📱 Platform
+## 📱 Platform
 
 * Android (primary target)
 * iOS (planned)
 
 ---
 
-# 🚀 Vision
+## 🚀 Vision
 
-Aporia Survivors aims to be:
+Aporia Heaven aims to be:
 
 * Mechanically deep, yet simple to play
 * Highly replayable
@@ -482,26 +465,7 @@ Aporia Survivors aims to be:
 
 ---
 
-# 🤝 Contributing
-
-Contributions, ideas, and feedback are welcome.
-
-Feel free to open:
-
-* Issues
-* Pull requests
-* Discussions
-
----
-
-# 📜 License
-
-This project is currently under development.
-License will be defined in future iterations.
-
----
-
-# 🧩 Final Note
+## 🧩 Final Note
 
 > "The player does not win.
 > The system simply allows them to last longer."
