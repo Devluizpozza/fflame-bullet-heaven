@@ -38,4 +38,5 @@ flutter:
     - lib/assets/tiles/
     - lib/assets/characteres/
     - lib/assets/characteres/goblin/
+    - lib/assets/characteres/imp/
 

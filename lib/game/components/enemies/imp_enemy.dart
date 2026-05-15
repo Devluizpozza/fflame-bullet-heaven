@@ -1,16 +1,15 @@
 import '../enemy.dart';
 
-class GoblinEnemy extends Enemy {
+class ImpEnemy extends Enemy {
   static const double defaultHeight = 48.0;
-  static const String _sprite =
-      'lib/assets/characteres/goblin/globlin_move_right.png';
+  static const String _sprite = 'lib/assets/characteres/imp/imp.png';
 
-  GoblinEnemy(
+  ImpEnemy(
     super.target, {
     required super.speed,
     required super.color,
     required super.onDeath,
-    super.initialHp = 10,
+    super.initialHp = 20,
     super.targetHeight = defaultHeight,
   });
 

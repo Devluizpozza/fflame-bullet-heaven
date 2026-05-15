@@ -1,11 +1,12 @@
 import 'dart:math';
 
+import 'package:fflame/game/components/enemies/imp_enemy.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Color, Colors;
 
 import '../components/bone_death.dart';
-import '../components/enemy.dart';
 import '../components/enemies/goblin_enemy.dart';
+import '../components/enemy.dart';
 import '../components/health_drop.dart';
 import '../components/xp_orb.dart';
 import '../game_constants.dart';
@@ -18,7 +19,7 @@ class SpawnSystem extends Component {
   final void Function(int) onHealPlayer;
   final void Function() onGrantFullLevel;
 
-  static const double interval = 3.0;
+  static const double interval = 10.0;
   static const double bossInterval = 10.0;
   static const int countPerWave = 3;
   static const double minDistance = 300.0;
@@ -78,9 +79,15 @@ class SpawnSystem extends Component {
   }
 
   void _spawnRandom() {
-    _spawnEnemy(
+    _spawnGoblin(
       color: _colors[_random.nextInt(_colors.length)],
       initialHp: 10 + _random.nextInt(21),
+      speed: 50.0 + _random.nextDouble() * 100,
+      position: _randomPosition(),
+    );
+    _spawnImp(
+      color: _colors[_random.nextInt(_colors.length)],
+      initialHp: 20 + _random.nextInt(21),
       speed: 50.0 + _random.nextDouble() * 100,
       position: _randomPosition(),
     );
@@ -120,14 +127,15 @@ class SpawnSystem extends Component {
 
         onGrantFullLevel();
 
-        parent!.add(BoneDeath(position: pos, targetHeight: _bossTargetHeight * 0.25));
+        parent!.add(
+            BoneDeath(position: pos, targetHeight: _bossTargetHeight * 0.25));
       },
     )..position = _randomPosition();
     enemies.add(e);
     parent!.add(e);
   }
 
-  void _spawnEnemy({
+  void _spawnGoblin({
     required Color color,
     required int initialHp,
     required double speed,
@@ -135,6 +143,44 @@ class SpawnSystem extends Component {
   }) {
     late final Enemy e;
     e = GoblinEnemy(
+      playerRef,
+      speed: speed,
+      color: color,
+      initialHp: initialHp,
+      onDeath: (pos, c) {
+        enemies.remove(e);
+        onKill();
+        parent!.add(BoneDeath(position: pos));
+        if (_random.nextInt(10) < 7) {
+          parent!.add(XpOrb(
+            position: pos,
+            target: playerRef,
+            xpValue: e.maxHp,
+            color: c,
+            onCollect: onXpCollect,
+          ));
+        }
+        if (_random.nextInt(10) == 0) {
+          parent!.add(HealthDrop(
+            position: pos,
+            target: playerRef,
+            onCollect: () => onHealPlayer(4),
+          ));
+        }
+      },
+    )..position = position;
+    enemies.add(e);
+    parent!.add(e);
+  }
+
+  void _spawnImp({
+    required Color color,
+    required int initialHp,
+    required double speed,
+    required Vector2 position,
+  }) {
+    late final Enemy e;
+    e = ImpEnemy(
       playerRef,
       speed: speed,
       color: color,
