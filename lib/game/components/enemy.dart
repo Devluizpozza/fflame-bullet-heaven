@@ -19,10 +19,16 @@ abstract class Enemy extends SpriteAnimationComponent
   final int maxHp;
   int hp;
 
-  // Proporção da hitbox em relação ao tamanho visual (0.5 = 50%)
   double get hitboxRatio => 0.5;
 
   _HDir? _lastHDir;
+  double _flashTimer = 0;
+
+  static const double _flashDuration = 0.25;
+  static const _blueFlashFilter = ui.ColorFilter.mode(
+    ui.Color(0x993399FF),
+    ui.BlendMode.srcATop,
+  );
 
   static final _barBgPaint = ui.Paint()..color = const ui.Color(0x99000000);
   static final _barFillPaint = ui.Paint()..color = const ui.Color(0xFF4CAF50);
@@ -96,6 +102,11 @@ abstract class Enemy extends SpriteAnimationComponent
     canvas.restore();
   }
 
+  void flashBlue() {
+    _flashTimer = _flashDuration;
+    paint.colorFilter = _blueFlashFilter;
+  }
+
   @override
   void takeDamage(int amount) {
     if (hp <= 0) return;
@@ -109,6 +120,12 @@ abstract class Enemy extends SpriteAnimationComponent
   @override
   void update(double dt) {
     super.update(dt);
+
+    if (_flashTimer > 0) {
+      _flashTimer -= dt;
+      if (_flashTimer <= 0) paint.colorFilter = null;
+    }
+
     final dir = target.position - position;
     if (dir.length > 0) {
       dir.normalize();

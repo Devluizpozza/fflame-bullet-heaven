@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flame/camera.dart';
@@ -7,6 +8,7 @@ import 'package:flame/input.dart';
 import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:flutter/material.dart' show EdgeInsets, VoidCallback;
 
+import 'components/enemy.dart';
 import 'components/interfaces.dart';
 import 'components/player.dart';
 import 'components/projectile.dart';
@@ -17,7 +19,9 @@ import 'player_stats.dart';
 import 'skills/explosion_on_kill_skill.dart';
 import 'skills/skill.dart';
 import 'skills/skill_offer.dart';
+import 'skills/skill_upgrade.dart';
 import 'skills/projectile_speed_skill.dart';
+import 'skills/storm_rage_skill.dart';
 import 'systems/spawn_system.dart';
 import 'systems/xp_system.dart';
 import 'world/game_world.dart';
@@ -26,6 +30,7 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
   final VoidCallback onQuit;
   final PlayerStats playerStats = PlayerStats();
   final GameEventBus eventBus = GameEventBus();
+  final _random = Random();
   late Player player;
   late final GameWorld _world;
   late final CameraComponent _cam;
@@ -49,17 +54,33 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
 
   late final ValueNotifier<List<(String, int)>> collectedSkillsNotifier;
 
-  List<SkillOffer> get currentLevelUpOffers => List.generate(
-        3,
-        (_) {
-          final skill = _availableSkills[0];
-          return SkillOffer(
-            title: skill.name,
-            description: skill.description,
-            nextLevel: skill.level + 1,
-            onSelect: () => _applySkill(skill),
-          );
-        },
+  /// Gera 3 ofertas sorteando skills e seus upgrades aleatoriamente.
+  /// Cada skill aparece no máximo uma vez por sorteio.
+  List<SkillOffer> get currentLevelUpOffers {
+    final shuffled = List.of(_availableSkills)..shuffle(_random);
+    final offers = <SkillOffer>[];
+
+    for (final skill in shuffled) {
+      if (offers.length >= 3) break;
+      final upgrade = skill.upgrades[_random.nextInt(skill.upgrades.length)];
+      offers.add(_makeOffer(skill, upgrade));
+    }
+
+    // Se houver menos skills que slots, completa com repetições aleatórias
+    while (offers.length < 3) {
+      final skill = shuffled[_random.nextInt(shuffled.length)];
+      final upgrade = skill.upgrades[_random.nextInt(skill.upgrades.length)];
+      offers.add(_makeOffer(skill, upgrade));
+    }
+
+    return offers;
+  }
+
+  SkillOffer _makeOffer(Skill skill, SkillUpgrade upgrade) => SkillOffer(
+        title: upgrade.name,
+        description: upgrade.description,
+        nextLevel: skill.level + 1,
+        onSelect: () => _applySkill(skill, upgrade),
       );
 
   MyGame({required this.onQuit});
@@ -76,14 +97,13 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
     _availableSkills = [
       ProjectileSpeedSkill(),
       ExplosionOnKillSkill(onExplode: _handleExplosion),
+      StormRageSkill(onStrike: _handleLightningStrike),
     ];
 
-    // Registra todos os listeners de skills no bus (feito uma única vez)
     for (final skill in _availableSkills) {
       skill.register(eventBus);
     }
 
-    // killCount via bus — SpawnSystem não precisa mais de callback onKill
     eventBus.on<EnemyKilledEvent>((_) => killCount++);
 
     _xpSystem = XpSystem(
@@ -139,7 +159,6 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
       onGrantFullLevel: _grantFullLevel,
     ));
 
-    // Inicia pausado — engine só começa quando o jogador pressionar "Jogar"
     pauseEngine();
   }
 
@@ -174,6 +193,20 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
     }
   }
 
+  // ── Lightning Strike ─────────────────────────────────────────
+
+  void _handleLightningStrike(Vector2 origin, int count) {
+    if (_enemies.isEmpty) return;
+    final pool = List.of(_enemies)..shuffle(_random);
+    final targets = pool.take(count);
+    for (final t in targets) {
+      if (t is Enemy) {
+        t.flashBlue();
+        t.takeDamage(20);
+      }
+    }
+  }
+
   // ── Boss reward ──────────────────────────────────────────────
 
   void _grantFullLevel() {
@@ -183,8 +216,8 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
 
   // ── Skill application ────────────────────────────────────────
 
-  void _applySkill(Skill skill) {
-    skill.apply(player);
+  void _applySkill(Skill skill, SkillUpgrade upgrade) {
+    upgrade.apply(player);
 
     final skills = [...collectedSkillsNotifier.value];
     final idx = skills.indexWhere((s) => s.$1 == skill.name);
