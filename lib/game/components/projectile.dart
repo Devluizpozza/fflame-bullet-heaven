@@ -10,8 +10,8 @@ import '../game_constants.dart';
 import 'interfaces.dart';
 
 class Projectile extends SpriteAnimationComponent with CollisionCallbacks {
-  static const double _speed = 400;
-  static const double _radius = 8.0;
+  static const double _speed = 300;
+  static const double _radius = 20.0;
 
   final Vector2 _velocity;
 
@@ -60,10 +60,11 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks {
   }
 
   @override
-  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
+  void onCollisionStart(
+      Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints, other);
     if (other is Damageable) {
-      other.takeDamage(3);
+      other.takeDamage(15);
       removeFromParent();
     }
   }

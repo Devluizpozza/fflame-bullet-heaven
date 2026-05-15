@@ -10,12 +10,13 @@ class BoneDeath extends SpriteComponent {
   final double targetHeight;
   double _timer = 0;
 
-  BoneDeath({required Vector2 position, this.targetHeight = 12.0})
+  BoneDeath({required Vector2 position, this.targetHeight = 30.0})
       : super(anchor: Anchor.center, position: position);
 
   @override
   Future<void> onLoad() async {
-    final data = await rootBundle.load('lib/assets/characteres/goblin/bone_death.png');
+    final data =
+        await rootBundle.load('lib/assets/characteres/goblin/bone_death.png');
     final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     final frame = await codec.getNextFrame();
     sprite = Sprite(frame.image);

@@ -128,7 +128,7 @@ class SpawnSystem extends Component {
         onGrantFullLevel();
 
         parent!.add(
-            BoneDeath(position: pos, targetHeight: _bossTargetHeight * 0.25));
+            BoneDeath(position: pos, targetHeight: _bossTargetHeight * 0.40));
       },
     )..position = _randomPosition();
     enemies.add(e);

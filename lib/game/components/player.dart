@@ -2,7 +2,6 @@ import 'dart:ui' as ui;
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:flame/input.dart';
 import 'package:flutter/services.dart';
 
 import '../game_constants.dart';
@@ -10,7 +9,8 @@ import 'interfaces.dart';
 
 enum _HDir { left, right }
 
-class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCallbacks {
+class Player extends SpriteAnimationComponent
+    with KeyboardHandler, CollisionCallbacks {
   final JoystickComponent joystick;
   final List<PositionComponent> targets;
   final void Function(Vector2 position, Vector2 direction) onFire;
@@ -28,7 +28,7 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
   );
 
   int hp = maxHp;
-  double cooldownDuration = 0.4;
+  double cooldownDuration = 2.0;
   int projectileCount = 1;
 
   final double speed = 200;
@@ -52,10 +52,13 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
   @override
   Future<void> onLoad() async {
     _animIdle = await _loadAnim('lib/assets/characteres/idle_player.png', 3);
-    _animMoveLeft = await _loadAnim('lib/assets/characteres/player_move_left.png', 4);
-    _animMoveRight = await _loadAnim('lib/assets/characteres/player_move_right.png', 4);
+    _animMoveLeft =
+        await _loadAnim('lib/assets/characteres/player_move_left.png', 4);
+    _animMoveRight =
+        await _loadAnim('lib/assets/characteres/player_move_right.png', 4);
 
-    final data = await rootBundle.load('lib/assets/characteres/idle_player.png');
+    final data =
+        await rootBundle.load('lib/assets/characteres/idle_player.png');
     final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     final frame = await codec.getNextFrame();
     final img = frame.image;
@@ -83,7 +86,8 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
       SpriteAnimationData.sequenced(
         amount: frames,
         amountPerRow: 1,
-        textureSize: Vector2(img.width.toDouble(), img.height / frames.toDouble()),
+        textureSize:
+            Vector2(img.width.toDouble(), img.height / frames.toDouble()),
         stepTime: 0.12,
         loop: true,
       ),
@@ -129,7 +133,8 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
   }
 
   @override
-  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
+  void onCollisionStart(
+      Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints, other);
     if (other is Hostile) takeDamage(1);
   }
@@ -138,13 +143,17 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
     _keyboardVelocity = Vector2.zero();
     if (keysPressed.contains(LogicalKeyboardKey.keyW) ||
-        keysPressed.contains(LogicalKeyboardKey.arrowUp)) _keyboardVelocity.y = -1;
+        keysPressed.contains(LogicalKeyboardKey.arrowUp))
+      _keyboardVelocity.y = -1;
     if (keysPressed.contains(LogicalKeyboardKey.keyS) ||
-        keysPressed.contains(LogicalKeyboardKey.arrowDown)) _keyboardVelocity.y = 1;
+        keysPressed.contains(LogicalKeyboardKey.arrowDown))
+      _keyboardVelocity.y = 1;
     if (keysPressed.contains(LogicalKeyboardKey.keyA) ||
-        keysPressed.contains(LogicalKeyboardKey.arrowLeft)) _keyboardVelocity.x = -1;
+        keysPressed.contains(LogicalKeyboardKey.arrowLeft))
+      _keyboardVelocity.x = -1;
     if (keysPressed.contains(LogicalKeyboardKey.keyD) ||
-        keysPressed.contains(LogicalKeyboardKey.arrowRight)) _keyboardVelocity.x = 1;
+        keysPressed.contains(LogicalKeyboardKey.arrowRight))
+      _keyboardVelocity.x = 1;
     if (_keyboardVelocity.length > 0) _keyboardVelocity.normalize();
     return true;
   }
@@ -172,8 +181,10 @@ class Player extends SpriteAnimationComponent with KeyboardHandler, CollisionCal
 
     _updateAnimation(moveDir);
 
-    position.x = position.x.clamp(size.x / 2, GameConstants.mapWidth - size.x / 2);
-    position.y = position.y.clamp(size.y / 2, GameConstants.mapHeight - size.y / 2);
+    position.x =
+        position.x.clamp(size.x / 2, GameConstants.mapWidth - size.x / 2);
+    position.y =
+        position.y.clamp(size.y / 2, GameConstants.mapHeight - size.y / 2);
 
     _cooldown -= dt;
     if (_cooldown <= 0) {
