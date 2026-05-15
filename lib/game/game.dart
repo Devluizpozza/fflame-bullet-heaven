@@ -54,26 +54,23 @@ class MyGame extends FlameGame with HasKeyboardHandlerComponents {
 
   late final ValueNotifier<List<(String, int)>> collectedSkillsNotifier;
 
-  /// Gera 3 ofertas sorteando skills e seus upgrades aleatoriamente.
-  /// Cada skill aparece no máximo uma vez por sorteio.
+  /// Gera 3 ofertas a partir de um pool plano de todos os (skill, upgrade)
+  /// possíveis. Cada caminho de upgrade é uma entrada independente no pool,
+  /// então upgrades distintos da mesma skill competem entre si pelo sorteio.
   List<SkillOffer> get currentLevelUpOffers {
-    final shuffled = List.of(_availableSkills)..shuffle(_random);
-    final offers = <SkillOffer>[];
+    final pool = <(Skill, SkillUpgrade)>[
+      for (final skill in _availableSkills)
+        for (final upgrade in skill.upgrades) (skill, upgrade),
+    ]..shuffle(_random);
 
-    for (final skill in shuffled) {
-      if (offers.length >= 3) break;
-      final upgrade = skill.upgrades[_random.nextInt(skill.upgrades.length)];
-      offers.add(_makeOffer(skill, upgrade));
+    // Garante 3 ofertas mesmo com pool pequeno (repete se necessário)
+    final result = <SkillOffer>[];
+    while (result.length < 3) {
+      final idx = result.length % pool.length;
+      final (skill, upgrade) = pool[idx];
+      result.add(_makeOffer(skill, upgrade));
     }
-
-    // Se houver menos skills que slots, completa com repetições aleatórias
-    while (offers.length < 3) {
-      final skill = shuffled[_random.nextInt(shuffled.length)];
-      final upgrade = skill.upgrades[_random.nextInt(skill.upgrades.length)];
-      offers.add(_makeOffer(skill, upgrade));
-    }
-
-    return offers;
+    return result;
   }
 
   SkillOffer _makeOffer(Skill skill, SkillUpgrade upgrade) => SkillOffer(
