@@ -10,13 +10,17 @@ import '../game_constants.dart';
 import 'interfaces.dart';
 
 class Projectile extends SpriteAnimationComponent with CollisionCallbacks {
-  static const double _speed = 300;
   static const double _radius = 20.0;
 
   final Vector2 _velocity;
+  final int damage;
 
-  Projectile({required Vector2 position, required Vector2 direction})
-      : _velocity = direction.normalized() * _speed,
+  Projectile({
+    required Vector2 position,
+    required Vector2 direction,
+    double speed = 300,
+    this.damage = 15,
+  })  : _velocity = direction.normalized() * speed,
         super(
           size: Vector2.all(_radius * 2),
           anchor: Anchor.center,
@@ -34,7 +38,6 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks {
     final frameW = img.width / frames.toDouble();
     final frameH = img.height.toDouble();
 
-    // Mantém proporção do frame; +50% em relação ao radius base
     final scale = (_radius * 3) / frameH;
     size = Vector2(frameW * scale, frameH * scale);
 
@@ -42,7 +45,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks {
       img,
       SpriteAnimationData.sequenced(
         amount: frames,
-        amountPerRow: frames, // 1 linha, 4 colunas
+        amountPerRow: frames,
         textureSize: Vector2(frameW, frameH),
         stepTime: 0.08,
         loop: true,
@@ -64,7 +67,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks {
       Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints, other);
     if (other is Damageable) {
-      other.takeDamage(15);
+      other.takeDamage(damage);
       removeFromParent();
     }
   }
@@ -90,7 +93,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks {
       if (result != null && result.isActive) {
         final hit = result.hitbox?.parent;
         if (hit is Damageable) {
-          hit.takeDamage(3);
+          hit.takeDamage(damage);
           removeFromParent();
           return;
         }

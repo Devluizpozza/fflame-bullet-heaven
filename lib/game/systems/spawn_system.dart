@@ -9,12 +9,14 @@ import '../components/enemies/goblin_enemy.dart';
 import '../components/enemy.dart';
 import '../components/health_drop.dart';
 import '../components/xp_orb.dart';
+import '../events/game_event_bus.dart';
+import '../events/game_events.dart';
 import '../game_constants.dart';
 
 class SpawnSystem extends Component {
   final PositionComponent playerRef;
   final List<PositionComponent> enemies;
-  final void Function() onKill;
+  final GameEventBus eventBus;
   final void Function(int) onXpCollect;
   final void Function(int) onHealPlayer;
   final void Function() onGrantFullLevel;
@@ -25,7 +27,7 @@ class SpawnSystem extends Component {
   static const double minDistance = 300.0;
   static const int initialCount = 3;
 
-  static const double _bossTargetHeight = GoblinEnemy.defaultHeight * 3; // 144
+  static const double _bossTargetHeight = GoblinEnemy.defaultHeight * 3;
   static const int _bossHp = 150;
   static const double _bossSpeed = 160.0;
 
@@ -47,7 +49,7 @@ class SpawnSystem extends Component {
   SpawnSystem({
     required this.playerRef,
     required this.enemies,
-    required this.onKill,
+    required this.eventBus,
     required this.onXpCollect,
     required this.onHealPlayer,
     required this.onGrantFullLevel,
@@ -103,7 +105,7 @@ class SpawnSystem extends Component {
       targetHeight: _bossTargetHeight,
       onDeath: (pos, _) {
         enemies.remove(e);
-        onKill();
+        eventBus.emit(EnemyKilledEvent(pos));
 
         parent!.add(HealthDrop(
           position: pos,
@@ -149,7 +151,7 @@ class SpawnSystem extends Component {
       initialHp: initialHp,
       onDeath: (pos, c) {
         enemies.remove(e);
-        onKill();
+        eventBus.emit(EnemyKilledEvent(pos));
         parent!.add(BoneDeath(position: pos));
         if (_random.nextInt(10) < 7) {
           parent!.add(XpOrb(
@@ -187,7 +189,7 @@ class SpawnSystem extends Component {
       initialHp: initialHp,
       onDeath: (pos, c) {
         enemies.remove(e);
-        onKill();
+        eventBus.emit(EnemyKilledEvent(pos));
         parent!.add(BoneDeath(position: pos));
         if (_random.nextInt(10) < 7) {
           parent!.add(XpOrb(

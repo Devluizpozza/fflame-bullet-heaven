@@ -5,33 +5,34 @@ import 'package:flame/components.dart';
 import 'package:flutter/services.dart';
 
 import '../game_constants.dart';
+import '../player_stats.dart';
 import 'interfaces.dart';
 
 enum _HDir { left, right }
 
 class Player extends SpriteAnimationComponent
     with KeyboardHandler, CollisionCallbacks {
+  final PlayerStats stats;
   final JoystickComponent joystick;
   final List<PositionComponent> targets;
   final void Function(Vector2 position, Vector2 direction) onFire;
   final void Function(int hp)? onHpChanged;
+  final void Function(int amount, int currentHp)? onDamaged;
   final void Function()? onDeath;
 
-  static const int maxHp = 20;
   static const double _detectionRadius = 250;
   static const double _flashDuration = 0.3;
   static const double _projectileSpacing = 14.0;
 
   static const _hitColorFilter = ui.ColorFilter.mode(
-    ui.Color(0x66FF0000), // vermelho com ~0.4 de opacidade
-    ui.BlendMode.srcATop, // aplica apenas nos pixels opacos do sprite
+    ui.Color(0x66FF0000),
+    ui.BlendMode.srcATop,
   );
 
-  int hp = maxHp;
-  double cooldownDuration = 2.0;
+  int get maxHp => stats.maxHp.toInt();
+  late int hp;
   int projectileCount = 1;
 
-  final double speed = 200;
   Vector2 _keyboardVelocity = Vector2.zero();
   double _cooldown = 0;
   double _flashTimer = 0;
@@ -43,11 +44,15 @@ class Player extends SpriteAnimationComponent
 
   Player(
     this.joystick, {
+    required this.stats,
     required this.targets,
     required this.onFire,
     this.onHpChanged,
+    this.onDamaged,
     this.onDeath,
-  }) : super(anchor: Anchor.center);
+  }) : super(anchor: Anchor.center) {
+    hp = stats.maxHp.toInt();
+  }
 
   @override
   Future<void> onLoad() async {
@@ -111,7 +116,6 @@ class Player extends SpriteAnimationComponent
       };
     }
 
-    // Espelha o idle quando o último lado foi esquerda
     scale.x = (next == _animIdle && _lastHDir == _HDir.left) ? -1 : 1;
 
     if (animation != next) animation = next;
@@ -123,6 +127,7 @@ class Player extends SpriteAnimationComponent
     _flashTimer = _flashDuration;
     paint.colorFilter = _hitColorFilter;
     onHpChanged?.call(hp);
+    onDamaged?.call(amount, hp);
     if (hp <= 0) onDeath?.call();
   }
 
@@ -176,7 +181,7 @@ class Player extends SpriteAnimationComponent
     }
 
     if (!moveDir.isZero()) {
-      position += moveDir * speed * dt;
+      position += moveDir * stats.moveSpeed * dt;
     }
 
     _updateAnimation(moveDir);
@@ -191,7 +196,7 @@ class Player extends SpriteAnimationComponent
       final nearest = _nearestTargetInRadius();
       if (nearest != null) {
         _fireAt(nearest.position);
-        _cooldown = cooldownDuration;
+        _cooldown = 1.0 / stats.attackSpeed;
       }
     }
   }
